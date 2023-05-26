@@ -1,0 +1,12 @@
+{
+  "references": [],
+  "compilerOptions": {
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "module": "es2022",
+    "moduleResolution": "node"
+  },
+}
