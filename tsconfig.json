@@ -6,7 +6,8 @@
         "./src/*"
       ]
     },
-    "module": "es2022",
-    "moduleResolution": "node"
+    "module": "esnext",
+    "moduleResolution": "node",
+    "target": "esnext"
   },
 }
