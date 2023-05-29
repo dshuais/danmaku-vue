@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-29 18:27:55
+ * @LastEditTime: 2023-05-29 18:34:25
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -123,10 +123,10 @@ function initCore() {
 
 function play() {
   paused.value = false
-  if (!timer) {
-    timer = setInterval(() => draw(), debounce)
-  }
-  // draw()
+  // if (!timer) {
+  //   timer = setInterval(() => draw(), debounce)
+  // }
+  draw()
 }
 
 function draw() {
@@ -159,7 +159,6 @@ function insert(dm?: Danmu) {
   let el: HTMLDivElement = document.createElement('div')
   console.log(_index, _danmu);
 
-  debugger
   if (useSlot) {
     el = createVDom(_danmu, _index) as HTMLDivElement
   } else {
@@ -177,7 +176,7 @@ function insert(dm?: Danmu) {
     }
     // 没有设置轨道数 则在弹幕区域全屏播放
     if (!channels) {
-      calcChannels.value = Math.floor(containerHeight.value / danmuHeight.value + top)
+      calcChannels.value = Math.floor(containerHeight.value / (danmuHeight.value + top))
     }
     const channelIndex = getChannelIndex(el)
     if (channelIndex >= 0) {
