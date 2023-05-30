@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 16:22:10
+ * @LastEditTime: 2023-05-30 16:57:23
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -11,7 +11,7 @@ import { Danmu, DanChannel, Props } from './typings/Danmaku'
 import { useModelWrapper } from './utils';
 
 const slots = defineSlots()
-const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChannel, fontSize, top, right, isSuspend, extraStyle } = withDefaults(defineProps<Props>(), {
+const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChannel, fontSize, top, right, isSuspend, extraStyle, useSuspendSlot } = withDefaults(defineProps<Props>(), {
   /**
  * 弹幕列表
  */
@@ -32,6 +32,10 @@ const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChann
    * 是否开启插槽 默认false
    */
   useSlot: false,
+  /**
+   * 是否开启悬浮插槽 默认false
+   */
+  useSuspendSlot: false,
   /**
   * 弹幕刷新频率(ms) 默认100
   */
@@ -151,6 +155,13 @@ function insert() {
   }
   el.style.opacity = '0'
   el.classList.add('dm')
+
+  if (useSuspendSlot) {
+    let sel: HTMLDivElement = createSuspendVDom(_danmu, _index).childNodes[1] as HTMLDivElement
+    sel.style.background = 'inherit'
+    sel && el.childNodes[1] && el.childNodes[1].appendChild(sel)
+  }
+
   dmContainer.value && dmContainer.value.appendChild(el)
   nextTick(() => {
     if (!danmuHeight.value) {
@@ -282,6 +293,22 @@ function createVDom(danmu: Danmu, index: number) {
       danmu,
       index
     })]), div.value as HTMLDivElement)
+
+  return div.value.childNodes[0] // childNodes[0]
+}
+
+/**
+ * 创建suspend dom节点
+ * @param {Danmu} danmu 当前弹幕数据
+ * @param {number} index 当前弹幕下标
+ * @return dom节点
+ */
+function createSuspendVDom(danmu: Danmu, index: number) {
+  const div = ref<HTMLElement>(document.createElement('div'))
+  render(h('div', {},
+    [slots.suspend && slots.suspend({
+      danmu, index
+    })]), div.value as HTMLElement)
 
   return div.value.childNodes[0]
 }
@@ -484,6 +511,12 @@ defineExpose({
       -webkit-backface-visibility: hidden;
       -webkit-perspective: 1000;
       cursor: pointer;
+
+      &>div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
 
       &.move {
         will-change: transform;

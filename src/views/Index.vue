@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 15:37:32
+ * @LastEditTime: 2023-05-30 16:57:53
  * @description: 心平气和
 -->
 <script setup lang="ts">
@@ -480,13 +480,27 @@ function handleDanmu(type: string) {
   }
 }
 
+function handleAdd(danmu) {
+  console.log(danmu);
+}
+
+function handleIndex(index: number) {
+  console.log(index);
+}
+
 </script>
 
 <template>
   <Danmu ref="danmaku" :danmus="danmus" use-slot style=" width: 100%;height:300px;" @list-end="handleListEnd"
-    @play-end="handlePlayEnd" loop randomChannel is-suspend>
+    @play-end="handlePlayEnd" loop randomChannel is-suspend useSuspendSlot>
     <template #dm="{ danmu, index }">
       <div class="danmu-item">{{ danmu }},{{ index }}</div>
+    </template>
+    <template #suspend="{ danmu, index }">
+      <div class="danmu-suspend">
+        <div class="item" @click="handleAdd(danmu)">+1</div>
+        <div class="item" @click="handleIndex(index)">👍</div>
+      </div>
     </template>
   </Danmu>
 
@@ -513,6 +527,17 @@ function handleDanmu(type: string) {
 
   &:hover {
     background: yellow;
+  }
+}
+
+.danmu-suspend {
+  display: flex;
+  align-items: center;
+  background: red !important;
+  border-radius: 0 30px 30px 0;
+
+  .item {
+    width: 30px;
   }
 }
 </style>
