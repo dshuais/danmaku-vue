@@ -2,12 +2,14 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 10:01:34
+ * @LastEditTime: 2023-05-30 11:46:05
  * @description: 心平气和
 -->
 <script setup lang="ts">
 import Danmu from '@/lib/Danmu.vue';
 import { ref } from 'vue';
+
+const danmaku = ref<InstanceType<typeof Danmu>>()
 
 const Danmus = ref<string[]>(['弹幕1', '弹幕2', '弹幕3', '弹幕4', '弹幕5'])
 
@@ -438,23 +440,75 @@ const danmus = [
   '火钳刘明',
 ]
 
+function handleListEnd() {
+  console.log('循环播放一轮结束');
+}
+
+function handlePlayEnd(index: number) {
+  console.log('播放结束', index);
+}
+
+function handleDanmu(type: string) {
+  switch (type) {
+    case 'play':
+      danmaku.value.play()
+      break;
+    case 'stop':
+      danmaku.value.pause()
+      break;
+    case 'hide':
+      danmaku.value.hide()
+      break;
+    case 'show':
+      danmaku.value.show()
+      break;
+    case 'clear':
+      danmaku.value.clear()
+      break;
+    case 'add':
+      danmaku.value.add('我是最新的一条弹幕')
+      break;
+    case 'push':
+      danmaku.value.push('我是添加到末尾的弹幕')
+      break;
+    case 'reset':
+      danmaku.value.reset()
+      break;
+    case 'resize':
+      danmaku.value.resize()
+      break;
+  }
+}
+
 </script>
 
 <template>
-  <Danmu :danmus="danmus" style="width: 100%;height:300px;">
+  <Danmu ref="danmaku" :danmus="danmus" use-slot style=" width: 100%;height:300px;" @list-end="handleListEnd"
+    @play-end="handlePlayEnd" loop randomChannel>
     <template #dm="{ danmu, index }">
       <div class="danmu-item">{{ danmu }},{{ index }}</div>
     </template>
   </Danmu>
+
+  <button @click="handleDanmu('play')">播放</button>
+  <button @click="handleDanmu('stop')">暂停</button>
+  <button @click="handleDanmu('clear')">clear</button>
+  <button @click="handleDanmu('show')">show</button>
+  <button @click="handleDanmu('hide')">hide</button>
+  <button @click="handleDanmu('add')">add</button>
+  <button @click="handleDanmu('push')">push</button>
+  <button @click="handleDanmu('reset')">reset</button>
+  <button @click="handleDanmu('resize')">resize</button>
 </template>
 
 <style scoped lang="scss">
 .danmu-item {
   background: red;
-  width: 100px;
+  // width: 100px;
   height: 30px;
   text-align: center;
   line-height: 30px;
   border-radius: 30px;
+  color: #fff;
 }
 </style>

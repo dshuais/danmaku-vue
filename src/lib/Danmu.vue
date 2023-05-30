@@ -2,13 +2,12 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 10:15:55
+ * @LastEditTime: 2023-05-30 11:43:38
  * @description: Danmaku
 -->
 <script setup lang="ts">
-import { time } from 'node:console';
-import { computed, h, nextTick, onMounted, reactive, ref, render } from 'vue'
-import { Danmu, DanChannel, DanmuItem, Props, DanmakuItem } from './typings/Danmaku'
+import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, render } from 'vue'
+import { Danmu, DanChannel, Props } from './typings/Danmaku'
 import { useModelWrapper } from './utils';
 
 const slots = defineSlots()
@@ -36,27 +35,27 @@ const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChann
   /**
   * 弹幕刷新频率(ms) 默认100
   */
-  debounce: 1000,
+  debounce: 100,
   /**
    * 弹幕速度（像素/秒） 默认200
    */
-  speeds: 200,
+  speeds: 100,
   /**
-     * 是否开启随机轨道注入弹幕 默认false
-     */
+   * 是否开启随机轨道注入弹幕 默认false
+   */
   randomChannel: false,
   /**
-    * 弹幕字号（仅文本模式） 默认18
-    */
+  * 弹幕字号（仅文本模式） 默认18
+  */
   fontSize: 18,
   /**
-   * 弹幕垂直间距 默认4
+   * 弹幕垂直间距 默认10
    */
-  top: 4,
+  top: 10,
   /**
-   * 弹幕水平间距 默认0
+   * 弹幕水平间距 默认10
    */
-  right: 0,
+  right: 10,
   /**
    * 是否开启悬浮暂停 默认false
    */
@@ -90,23 +89,6 @@ const danmuList = useModelWrapper<Danmu[]>(danmus, emit, 'danmus')
 
 const dmChannels = computed<number>(() => channels || calcChannels.value)
 
-const danmaku: DanmakuItem = reactive({
-  channels: computed(() => channels || calcChannels.value),
-  autoplay: computed(() => autoplay),
-  loop: computed(() => loop),
-  useSlot: computed(() => useSlot),
-  debounce: computed(() => debounce),
-  randomChannel: computed(() => randomChannel),
-})
-
-const danmu: DanmuItem = reactive({
-  height: computed(() => danmuHeight.value),
-  fontSize: computed(() => fontSize),
-  speeds: computed(() => speeds),
-  top: computed(() => top),
-  right: computed(() => right),
-})
-
 function init() {
   initCore()
   if (autoplay) {
@@ -133,9 +115,8 @@ function draw() {
   if (!paused.value && danmuList.value.length) {
     if (index.value > danmuList.value.length - 1) {
       const screenDanmus = dmContainer.value.children.length // 当前弹幕条数
-
       if (loop) {
-        if (screenDanmus < index.value) {
+        if (index.value >= danmuList.value.length) {
           emit('list-end')
           index.value = 0
         }
@@ -152,14 +133,12 @@ function draw() {
 }
 
 /**
- * 插入弹幕 允许外部直接执行绘制弹幕方法
- * @param {Danmu} dm 插入的弹幕 可选，默认播放danmus内的弹幕
+ * 插入弹幕
  */
-function insert(dm?: Danmu) {
+function insert() {
   const _index: number = loop ? index.value % danmuList.value.length : index.value // 将要播放的弹幕的下标
-  const _danmu: Danmu = dm || danmuList.value[_index]
+  const _danmu: Danmu = danmuList.value[_index]
   let el: HTMLDivElement = document.createElement('div')
-
   if (useSlot) {
     el = createVDom(_danmu, _index) as HTMLDivElement
   } else {
@@ -168,9 +147,9 @@ function insert(dm?: Danmu) {
     el.style.fontSize = `${fontSize}px`
     el.style.lineHeight = `${fontSize}px`
   }
-  el.classList.add('dm')
-  dmContainer.value.appendChild(el)
   el.style.opacity = '0'
+  el.classList.add('dm')
+  dmContainer.value && dmContainer.value.appendChild(el)
   nextTick(() => {
     if (!danmuHeight.value) {
       danmuHeight.value = el.offsetHeight
@@ -180,18 +159,14 @@ function insert(dm?: Danmu) {
       calcChannels.value = Math.floor(containerHeight.value / (danmuHeight.value + top))
     }
     const channelIndex = getChannelIndex(el)
-    console.log('轨道', channelIndex, _danmu);
-
     if (channelIndex >= 0) {
       const width = el.offsetWidth
       const height = danmuHeight.value
-      console.log(height);
-
       el.classList.add('move')
       el.dataset.index = `${_index}`
-      el.style.opacity = '1'
       el.style.top = channelIndex * (height + top) + 'px'
       el.style.width = width + right + 'px'
+      el.style.opacity = '1'
       el.style.setProperty('--dm-scroll-width', `-${containerWidth.value + (width * 2)}px`)
       el.style.left = `${containerWidth.value}px`
       el.style.animationDuration = `${containerWidth.value / speeds}s`
@@ -296,9 +271,82 @@ function clearTimer() {
   timer = null
 }
 
+function reset() {
+  danmuHeight.value = 0
+  init()
+}
+
+function clear() {
+  danChannel.value = {}
+  dmContainer.value.innerHTML = ''
+  paused.value = true
+  hidden.value = false
+  clearTimer()
+  index.value = 0
+}
+
+function pause() {
+  paused.value = true
+}
+
+function show() {
+  hidden.value = false
+}
+
+function hide() {
+  hidden.value = true
+}
+
+/**
+ * 添加弹幕 添加至播放位置
+ * @param {Danmu} dm 播放的弹幕
+ * @return {number} 弹幕的下标
+ */
+function add(dm: Danmu): number {
+  if (index.value >= danmuList.value.length - 1) {
+    danmuList.value.push(dm)
+    return danmuList.value.length - 1
+  } else {
+    const _index = index.value % danmuList.value.length
+    danmuList.value.splice(_index, 0, dm)
+    return _index - 1
+  }
+}
+
+/**
+ * 添加弹幕 添加至末尾
+ * @param {Danmu} dm 播放的弹幕
+ * @return {number} 弹幕的下标
+ */
+function push(dm: Danmu): number {
+  danmuList.value.push(dm)
+  return danmuList.value.length - 1
+}
+
+function resize() {
+  initCore()
+  const items = dmContainer.value.getElementsByClassName('dm')
+  for (let i = 0; i < items.length; i++) {
+    const el = items[i] as HTMLDivElement
+    el.style.setProperty('--dm-scroll-width', `-${containerWidth.value + (el.offsetWidth * 2)}px`)
+    el.style.left = `${containerWidth.value}px`
+    el.style.animationDuration = `${containerWidth.value / speeds}s`
+  }
+}
+
 onMounted(() => {
   init()
 })
+
+onBeforeUnmount(() => {
+  clear()
+})
+
+defineExpose({
+  add, push,
+  play, pause, reset, resize, show, hide, clear
+})
+
 </script>
 <template>
   <div ref="container" class="container">
@@ -312,6 +360,15 @@ onMounted(() => {
 .container {
   position: relative;
   overflow: hidden;
+  -webkit-transform: translateZ(0);
+  -moz-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  -o-transform: translateZ(0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000;
+  -webkit-backface-visibility: hidden;
+  -webkit-perspective: 1000;
 
   .danmus {
     position: absolute;
@@ -322,6 +379,15 @@ onMounted(() => {
     opacity: 0;
     -webkit-transition: all 0.3s;
     transition: all 0.3s;
+    -webkit-transform: translateZ(0);
+    -moz-transform: translateZ(0);
+    -ms-transform: translateZ(0);
+    -o-transform: translateZ(0);
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000;
+    -webkit-backface-visibility: hidden;
+    -webkit-perspective: 1000;
 
     &.show {
       opacity: 1;
@@ -340,8 +406,18 @@ onMounted(() => {
       padding: 0 10px;
       text-align: center;
       white-space: pre;
-      transform: translateX(0);
+      // transform: translateX(0);
       transform-style: preserve-3d;
+      -webkit-transform: translateZ(0);
+      -moz-transform: translateZ(0);
+      -ms-transform: translateZ(0);
+      -o-transform: translateZ(0);
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      perspective: 1000;
+      -webkit-backface-visibility: hidden;
+      -webkit-perspective: 1000;
+      cursor: pointer;
 
       &.move {
         will-change: transform;
