@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 18:10:52
+ * @LastEditTime: 2023-05-30 18:29:30
  * @description: 心平气和
 -->
 <script setup lang="ts">
@@ -491,7 +491,7 @@ function handleIndex(index: number) {
 </script>
 
 <template>
-  <Danmu ref="danmaku" :danmus="danmus" use-slot style=" width: 100%;height:300px;" @list-end="handleListEnd"
+  <Danmu ref="danmaku" use-slot :danmus="danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
     @play-end="handlePlayEnd" loop randomChannel is-suspend useSuspendSlot>
     <template #dm="{ danmu, index }">
       <div class="danmu-item">{{ danmu }},{{ index }}</div>
@@ -535,9 +535,5 @@ function handleIndex(index: number) {
   align-items: center;
   background: red !important;
   border-radius: 0 30px 30px 0;
-
-  .item {
-    width: 30px;
-  }
 }
 </style>

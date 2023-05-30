@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 18:13:41
+ * @LastEditTime: 2023-05-30 18:30:13
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -98,6 +98,7 @@ const dmChannels = computed<number>(() => channels || calcChannels.value)
 
 function init() {
   initCore()
+  isSuspend && !useSlot && initSuspendEvents()
   if (autoplay) {
     play()
   }
@@ -158,12 +159,16 @@ function insert() {
   el.style.opacity = '0'
   el.classList.add('dm')
 
-  if (useSuspendSlot) {
+  if (isSuspend && useSuspendSlot) {
     sel = createSuspendVDom(_danmu, _index).childNodes[1] as HTMLDivElement
     sel.classList.add('dm-suspend')
     sel.style.background = 'inherit'
     sel.style.display = 'none'
-    sel && el.childNodes[1] && el.childNodes[1].appendChild(sel)
+    if (useSlot) {
+      sel && el.childNodes[1] && el.childNodes[1].appendChild(sel)
+    } else {
+      sel && el.appendChild(sel)
+    }
   }
 
   dmContainer.value && dmContainer.value.appendChild(el)
@@ -352,6 +357,10 @@ function initSuspendEvents() {
       target = target.closest('.dm') || target
     }
     if (!target.className.includes('dm')) return
+    const suspend = target.childNodes[1] as HTMLElement
+    if (isSuspend && suspend) {
+      suspend.style.display = 'flex'
+    }
     target.classList.add('pause')
     suspendDanmus.push(target)
   })
@@ -361,6 +370,10 @@ function initSuspendEvents() {
       target = target.closest('.dm') || target
     }
     if (!target.className.includes('dm')) return
+    const suspend = target.childNodes[1] as HTMLElement
+    if (isSuspend && suspend) {
+      suspend.style.display = 'none'
+    }
     target.classList.remove('pause')
     suspendDanmus.forEach((item) => {
       item.classList.remove('pause')
@@ -460,6 +473,7 @@ defineExpose({
     <div ref="dmContainer" :class="['danmus', { show: !hidden }, { paused: paused }]">
       <!-- <slot :danmu="{ title: '弹幕', user: '用户' }" :index="1"></slot> -->
       <!-- <slot name="dm" :danmu="{ title: '弹幕', user: '用户' }" :index="1"></slot> -->
+      <!-- <slot name="suspend" :danmu="{ title: '弹幕', user: '用户' }" :index="1"></slot> -->
     </div>
   </div>
 </template>
@@ -495,6 +509,7 @@ defineExpose({
     perspective: 1000;
     -webkit-backface-visibility: hidden;
     -webkit-perspective: 1000;
+    user-select: none;
 
     &.show {
       opacity: 1;
@@ -524,6 +539,9 @@ defineExpose({
       -webkit-backface-visibility: hidden;
       -webkit-perspective: 1000;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
 
       &>div {
         display: flex;
