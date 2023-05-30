@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 11:43:38
+ * @LastEditTime: 2023-05-30 14:17:43
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -91,6 +91,7 @@ const dmChannels = computed<number>(() => channels || calcChannels.value)
 
 function init() {
   initCore()
+  isSuspend && initSuspendEvents()
   if (autoplay) {
     play()
   }
@@ -241,7 +242,6 @@ function getDanmuRight(el: HTMLDivElement): number {
   return dmContainer.value.getBoundingClientRect().right - elRight
 }
 
-
 /**
  * 创建dom节点
  * @param {Danmu} danmu 当前弹幕数据
@@ -252,7 +252,7 @@ function createVDom(danmu: Danmu, index: number) {
   const div = ref<HTMLDivElement>(document.createElement('div'))
   render(h('div', {
     onClick: () => {
-      console.log(1)
+      console.log(danmu, index)
     }
   },
     [slots.dm && slots.dm({
@@ -261,6 +261,35 @@ function createVDom(danmu: Danmu, index: number) {
     })]), div.value as HTMLDivElement)
 
   return div.value.childNodes[0]
+}
+
+/**
+ * 触摸悬浮
+ */
+function initSuspendEvents() {
+  let suspendDanmus: HTMLElement[] = []
+  dmContainer.value.addEventListener('mousemove', e => {
+    let target = e.target as EventTarget & HTMLElement
+    if (!target.className.includes('dm')) {
+      target = target.closest('.dm') || target
+    }
+    if (!target.className.includes('dm')) return
+    target.classList.add('pause')
+    suspendDanmus.push(target)
+  })
+
+  dmContainer.value.addEventListener('mouseout', e => {
+    let target = e.target as EventTarget & HTMLElement
+    if (!target.className.includes('dm')) {
+      target = target.closest('.dm') || target
+    }
+    if (!target.className.includes('dm')) return
+    target.classList.remove('pause')
+    suspendDanmus.forEach((item) => {
+      item.classList.remove('pause')
+    })
+    suspendDanmus = []
+  })
 }
 
 /**
