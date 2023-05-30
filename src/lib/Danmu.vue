@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 16:57:23
+ * @LastEditTime: 2023-05-30 18:13:41
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -90,6 +90,7 @@ const hidden = ref<boolean>(false)
 const paused = ref<boolean>(false)
 const danChannel = ref<DanChannel>({})
 const suspendList = ref<HTMLElement[]>([])
+const suspendRight = ref<number>(10)
 
 const danmuList = useModelWrapper<Danmu[]>(danmus, emit, 'danmus')
 
@@ -145,6 +146,7 @@ function insert() {
   const _index: number = loop ? index.value % danmuList.value.length : index.value // 将要播放的弹幕的下标
   const _danmu: Danmu = danmuList.value[_index]
   let el: HTMLDivElement = document.createElement('div')
+  let sel: HTMLDivElement = document.createElement('div')
   if (useSlot) {
     el = createVDom(_danmu, _index) as HTMLDivElement
   } else {
@@ -157,8 +159,10 @@ function insert() {
   el.classList.add('dm')
 
   if (useSuspendSlot) {
-    let sel: HTMLDivElement = createSuspendVDom(_danmu, _index).childNodes[1] as HTMLDivElement
+    sel = createSuspendVDom(_danmu, _index).childNodes[1] as HTMLDivElement
+    sel.classList.add('dm-suspend')
     sel.style.background = 'inherit'
+    sel.style.display = 'none'
     sel && el.childNodes[1] && el.childNodes[1].appendChild(sel)
   }
 
@@ -171,6 +175,7 @@ function insert() {
     if (!channels) {
       calcChannels.value = Math.floor(containerHeight.value / (danmuHeight.value + top))
     }
+    suspendRight.value = sel.offsetWidth + 10
     const channelIndex = getChannelIndex(el)
     if (channelIndex >= 0) {
       const width = el.offsetWidth
@@ -221,7 +226,7 @@ function getChannelIndex(el: HTMLDivElement): number {
          * 
          * 没有任何一条轨道可加入 返回-1
          */
-        const dmRight = getDanmuRight(items[j]) - 10
+        const dmRight = getDanmuRight(items[j]) - suspendRight.value
         if (dmRight <= (el.offsetWidth - items[j].offsetWidth) * 0.88 || dmRight <= 0) break
 
         if (j === items.length - 1) {
@@ -266,11 +271,15 @@ function createVDom(danmu: Danmu, index: number) {
     onClick: () => {
       emit('dm-click', danmu, index)
     },
-    onmouseover: (e: { stopImmediatePropagation: () => void; target: { closest: (arg0: string) => HTMLElement; }; }) => {
+    onmouseover: (e: { target: { closest: (arg0: string) => HTMLElement; childNodes: any; }; }) => {
       if (!isSuspend) return
       // e.stopImmediatePropagation()
       const dm: HTMLElement = e.target.closest('.dm')
       if (!dm) return
+      const suspend = dm.childNodes[1].childNodes[1] as HTMLElement
+      if (isSuspend && suspend) {
+        suspend.style.display = 'flex'
+      }
       dm.classList.add('pause')
       if (!suspendList.value.includes(dm)) {
         suspendList.value.push(dm)
@@ -282,6 +291,10 @@ function createVDom(danmu: Danmu, index: number) {
       // e.stopImmediatePropagation()
       const dm: HTMLElement = e.target.closest('.dm')
       if (!dm) return
+      const suspend = dm.childNodes[1].childNodes[1] as HTMLElement
+      if (isSuspend && suspend) {
+        suspend.style.display = 'none'
+      }
       dm.classList.remove('pause')
       if (suspendList.value.includes(dm)) {
         const index: number = suspendList.value.indexOf(dm)
@@ -294,7 +307,7 @@ function createVDom(danmu: Danmu, index: number) {
       index
     })]), div.value as HTMLDivElement)
 
-  return div.value.childNodes[0] // childNodes[0]
+  return div.value.childNodes[0]
 }
 
 /**

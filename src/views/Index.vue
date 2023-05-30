@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 16:57:53
+ * @LastEditTime: 2023-05-30 18:10:52
  * @description: 心平气和
 -->
 <script setup lang="ts">
@@ -526,7 +526,7 @@ function handleIndex(index: number) {
   color: #fff;
 
   &:hover {
-    background: yellow;
+    background: red;
   }
 }
 
