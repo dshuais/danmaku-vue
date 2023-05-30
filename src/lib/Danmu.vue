@@ -2,10 +2,11 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-29 18:34:25
+ * @LastEditTime: 2023-05-30 10:15:55
  * @description: Danmaku
 -->
 <script setup lang="ts">
+import { time } from 'node:console';
 import { computed, h, nextTick, onMounted, reactive, ref, render } from 'vue'
 import { Danmu, DanChannel, DanmuItem, Props, DanmakuItem } from './typings/Danmaku'
 import { useModelWrapper } from './utils';
@@ -39,7 +40,7 @@ const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChann
   /**
    * 弹幕速度（像素/秒） 默认200
    */
-  speeds: 2000,
+  speeds: 200,
   /**
      * 是否开启随机轨道注入弹幕 默认false
      */
@@ -123,17 +124,15 @@ function initCore() {
 
 function play() {
   paused.value = false
-  // if (!timer) {
-  //   timer = setInterval(() => draw(), debounce)
-  // }
-  draw()
+  if (!timer) {
+    timer = setInterval(() => draw(), debounce)
+  }
 }
 
 function draw() {
   if (!paused.value && danmuList.value.length) {
     if (index.value > danmuList.value.length - 1) {
       const screenDanmus = dmContainer.value.children.length // 当前弹幕条数
-      console.log('弹幕', screenDanmus)
 
       if (loop) {
         if (screenDanmus < index.value) {
@@ -141,9 +140,12 @@ function draw() {
           index.value = 0
         }
         insert()
+      } else {
+        if (screenDanmus < index.value) {
+          clearTimer()
+        }
       }
     } else {
-      console.log('弹幕')
       insert()
     }
   }
@@ -157,7 +159,6 @@ function insert(dm?: Danmu) {
   const _index: number = loop ? index.value % danmuList.value.length : index.value // 将要播放的弹幕的下标
   const _danmu: Danmu = dm || danmuList.value[_index]
   let el: HTMLDivElement = document.createElement('div')
-  console.log(_index, _danmu);
 
   if (useSlot) {
     el = createVDom(_danmu, _index) as HTMLDivElement
@@ -171,7 +172,7 @@ function insert(dm?: Danmu) {
   dmContainer.value.appendChild(el)
   el.style.opacity = '0'
   nextTick(() => {
-    if (!danmuHeight) {
+    if (!danmuHeight.value) {
       danmuHeight.value = el.offsetHeight
     }
     // 没有设置轨道数 则在弹幕区域全屏播放
@@ -179,9 +180,13 @@ function insert(dm?: Danmu) {
       calcChannels.value = Math.floor(containerHeight.value / (danmuHeight.value + top))
     }
     const channelIndex = getChannelIndex(el)
+    console.log('轨道', channelIndex, _danmu);
+
     if (channelIndex >= 0) {
       const width = el.offsetWidth
       const height = danmuHeight.value
+      console.log(height);
+
       el.classList.add('move')
       el.dataset.index = `${_index}`
       el.style.opacity = '1'
@@ -209,7 +214,7 @@ function insert(dm?: Danmu) {
  * @return {number}
  */
 function getChannelIndex(el: HTMLDivElement): number {
-  let _channels = [...Array(dmChannels).keys()]
+  let _channels = [...Array(dmChannels.value).keys()]
   if (randomChannel) {
     _channels = _channels.sort(() => 0.5 - Math.random())
   }
@@ -283,14 +288,15 @@ function createVDom(danmu: Danmu, index: number) {
   return div.value.childNodes[0]
 }
 
+/**
+ * 关闭定时器
+ */
+function clearTimer() {
+  clearInterval(timer)
+  timer = null
+}
+
 onMounted(() => {
-  // for (let i = 0; i < danmus.length; i++) {
-  //   const item = danmus[i]
-  //   const el: HTMLDivElement = createVDom(item, i) as HTMLDivElement
-  //   console.log('createVDom(i)', el);
-  //   el.classList.add('dm')
-  //   dmContainer.value?.appendChild(el)
-  // }
   init()
 })
 </script>
@@ -302,7 +308,7 @@ onMounted(() => {
     </div>
   </div>
 </template>
-<style lang="scss" scoped>
+<style lang="scss">
 .container {
   position: relative;
   overflow: hidden;
@@ -330,7 +336,9 @@ onMounted(() => {
     .dm {
       position: absolute;
       font-size: 20px;
-      color: #ddd;
+      color: #ccc;
+      padding: 0 10px;
+      text-align: center;
       white-space: pre;
       transform: translateX(0);
       transform-style: preserve-3d;
