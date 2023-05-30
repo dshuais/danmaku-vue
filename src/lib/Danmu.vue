@@ -1,0 +1,485 @@
+<!--
+ * @Author: dushuai
+ * @Date: 2023-05-25 15:46:39
+ * @LastEditors: dushuai
+ * @LastEditTime: 2023-05-30 14:17:43
+ * @description: Danmaku
+-->
+<script setup lang="ts">
+import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, render } from 'vue'
+import { Danmu, DanChannel, Props } from './typings/Danmaku'
+import { useModelWrapper } from './utils';
+
+const slots = defineSlots()
+const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChannel, fontSize, top, right, isSuspend, extraStyle } = withDefaults(defineProps<Props>(), {
+  /**
+ * 弹幕列表
+ */
+  // danmus,
+  /**
+   * 轨道数量 0为最大轨道数量（撑满容器）
+   */
+  channels: 0,
+  /**
+   * 自动播放 默认true
+   */
+  autoplay: true,
+  /**
+   * 循环播放 默认false
+   */
+  loop: false,
+  /**
+   * 是否开启插槽 默认false
+   */
+  useSlot: false,
+  /**
+  * 弹幕刷新频率(ms) 默认100
+  */
+  debounce: 100,
+  /**
+   * 弹幕速度（像素/秒） 默认200
+   */
+  speeds: 100,
+  /**
+   * 是否开启随机轨道注入弹幕 默认false
+   */
+  randomChannel: false,
+  /**
+  * 弹幕字号（仅文本模式） 默认18
+  */
+  fontSize: 18,
+  /**
+   * 弹幕垂直间距 默认10
+   */
+  top: 10,
+  /**
+   * 弹幕水平间距 默认10
+   */
+  right: 10,
+  /**
+   * 是否开启悬浮暂停 默认false
+   */
+  isSuspend: false,
+  /**
+   * 弹幕额外样式
+   */
+  extraStyle: ''
+})
+const emit = defineEmits<{
+  (e: 'list-end'): void
+  (e: 'play-end', index: number): void
+  (e: 'update:danmus', danmus: Danmu): void
+}>()
+
+const container = ref<HTMLDivElement>()
+const dmContainer = ref<HTMLDivElement>()
+
+const containerWidth = ref<number>(0)
+const containerHeight = ref<number>(0)
+
+let timer = null
+const calcChannels = ref<number>(0)
+const danmuHeight = ref<number>(0)
+const index = ref<number>(0)
+const hidden = ref<boolean>(false)
+const paused = ref<boolean>(false)
+const danChannel = ref<DanChannel>({})
+
+const danmuList = useModelWrapper<Danmu[]>(danmus, emit, 'danmus')
+
+const dmChannels = computed<number>(() => channels || calcChannels.value)
+
+function init() {
+  initCore()
+  isSuspend && initSuspendEvents()
+  if (autoplay) {
+    play()
+  }
+}
+
+/**
+ * 获取弹幕区域宽高
+ */
+function initCore() {
+  containerWidth.value = container.value.offsetWidth
+  containerHeight.value = container.value.offsetHeight
+}
+
+function play() {
+  paused.value = false
+  if (!timer) {
+    timer = setInterval(() => draw(), debounce)
+  }
+}
+
+function draw() {
+  if (!paused.value && danmuList.value.length) {
+    if (index.value > danmuList.value.length - 1) {
+      const screenDanmus = dmContainer.value.children.length // 当前弹幕条数
+      if (loop) {
+        if (index.value >= danmuList.value.length) {
+          emit('list-end')
+          index.value = 0
+        }
+        insert()
+      } else {
+        if (screenDanmus < index.value) {
+          clearTimer()
+        }
+      }
+    } else {
+      insert()
+    }
+  }
+}
+
+/**
+ * 插入弹幕
+ */
+function insert() {
+  const _index: number = loop ? index.value % danmuList.value.length : index.value // 将要播放的弹幕的下标
+  const _danmu: Danmu = danmuList.value[_index]
+  let el: HTMLDivElement = document.createElement('div')
+  if (useSlot) {
+    el = createVDom(_danmu, _index) as HTMLDivElement
+  } else {
+    el.innerHTML = _danmu as string
+    el.setAttribute('style', extraStyle)
+    el.style.fontSize = `${fontSize}px`
+    el.style.lineHeight = `${fontSize}px`
+  }
+  el.style.opacity = '0'
+  el.classList.add('dm')
+  dmContainer.value && dmContainer.value.appendChild(el)
+  nextTick(() => {
+    if (!danmuHeight.value) {
+      danmuHeight.value = el.offsetHeight
+    }
+    // 没有设置轨道数 则在弹幕区域全屏播放
+    if (!channels) {
+      calcChannels.value = Math.floor(containerHeight.value / (danmuHeight.value + top))
+    }
+    const channelIndex = getChannelIndex(el)
+    if (channelIndex >= 0) {
+      const width = el.offsetWidth
+      const height = danmuHeight.value
+      el.classList.add('move')
+      el.dataset.index = `${_index}`
+      el.style.top = channelIndex * (height + top) + 'px'
+      el.style.width = width + right + 'px'
+      el.style.opacity = '1'
+      el.style.setProperty('--dm-scroll-width', `-${containerWidth.value + (width * 2)}px`)
+      el.style.left = `${containerWidth.value}px`
+      el.style.animationDuration = `${containerWidth.value / speeds}s`
+      el.addEventListener('animationend', () => {
+        if (Number(el.dataset.index) === danmuList.value.length - 1 && !loop) {
+          emit('play-end', Number(el.dataset.index))
+        }
+        dmContainer.value && dmContainer.value.removeChild(el)
+      })
+      index.value++
+    } else {
+      dmContainer.value.removeChild(el)
+    }
+  })
+}
+
+/**
+ * 获取该弹幕要出现的轨道index
+ * @param {HTMLDivElement} el 弹幕dom
+ * @return {number}
+ */
+function getChannelIndex(el: HTMLDivElement): number {
+  let _channels = [...Array(dmChannels.value).keys()]
+  if (randomChannel) {
+    _channels = _channels.sort(() => 0.5 - Math.random())
+  }
+
+  for (const i of _channels) {
+    const items = danChannel.value[i]
+
+    if (items && items.length) {
+      for (let j = 0; j < items.length; j++) {
+        /**
+         * 安全距离判断
+         * el.offsetWidth 当前的弹幕的宽度
+         * items[j].offsetWidth 当前该轨道内弹幕j的宽度
+         * 如果弹幕j距离右侧的距离 小于 (当前弹幕width-弹幕j的width)*0.88 ---> 不添加到该轨道
+         * 弹幕j距离右侧距离 小于 0 ---> 不添加到该轨道
+         * 
+         * 没有任何一条轨道可加入 返回-1
+         */
+        const dmRight = getDanmuRight(items[j]) - 10
+        if (dmRight <= (el.offsetWidth - items[j].offsetWidth) * 0.88 || dmRight <= 0) break
+
+        if (j === items.length - 1) {
+          danChannel.value[i].push(el)
+          el.addEventListener('animationend', () => danChannel.value[i].splice(0, 1))
+          return i % dmChannels.value
+        }
+      }
+    } else {
+      danChannel.value[i] = [el]
+      el.addEventListener('animationend', () => danChannel.value[i].splice(0, 1))
+      return i % dmChannels.value
+    }
+  }
+  return -1
+}
+
+/**
+ * 获取弹幕右侧到屏幕右侧的距离
+ * @param {HTMLDivElement} el 当前弹幕
+ * @return {number} 当前弹幕飘到的位置
+ */
+function getDanmuRight(el: HTMLDivElement): number {
+  const elWidth = el.offsetWidth || parseInt(el.style.width)
+  /**
+   * getBoundingClientRect().right 当前元素的右边到弹幕区域最左侧的距离
+   * elRight: 当前弹幕距离左侧的距离 ==> 当前弹幕整体宽度距离最左侧的距离 或 当前弹幕区域距离的宽度加上当前弹幕的宽度
+   */
+  const elRight = el.getBoundingClientRect().right || dmContainer.value.getBoundingClientRect().right + elWidth
+  return dmContainer.value.getBoundingClientRect().right - elRight
+}
+
+/**
+ * 创建dom节点
+ * @param {Danmu} danmu 当前弹幕数据
+ * @param {number} index 当前弹幕下标
+ * @return dom节点
+ */
+function createVDom(danmu: Danmu, index: number) {
+  const div = ref<HTMLDivElement>(document.createElement('div'))
+  render(h('div', {
+    onClick: () => {
+      console.log(danmu, index)
+    }
+  },
+    [slots.dm && slots.dm({
+      danmu,
+      index
+    })]), div.value as HTMLDivElement)
+
+  return div.value.childNodes[0]
+}
+
+/**
+ * 触摸悬浮
+ */
+function initSuspendEvents() {
+  let suspendDanmus: HTMLElement[] = []
+  dmContainer.value.addEventListener('mousemove', e => {
+    let target = e.target as EventTarget & HTMLElement
+    if (!target.className.includes('dm')) {
+      target = target.closest('.dm') || target
+    }
+    if (!target.className.includes('dm')) return
+    target.classList.add('pause')
+    suspendDanmus.push(target)
+  })
+
+  dmContainer.value.addEventListener('mouseout', e => {
+    let target = e.target as EventTarget & HTMLElement
+    if (!target.className.includes('dm')) {
+      target = target.closest('.dm') || target
+    }
+    if (!target.className.includes('dm')) return
+    target.classList.remove('pause')
+    suspendDanmus.forEach((item) => {
+      item.classList.remove('pause')
+    })
+    suspendDanmus = []
+  })
+}
+
+/**
+ * 关闭定时器
+ */
+function clearTimer() {
+  clearInterval(timer)
+  timer = null
+}
+
+function reset() {
+  danmuHeight.value = 0
+  init()
+}
+
+function clear() {
+  danChannel.value = {}
+  dmContainer.value.innerHTML = ''
+  paused.value = true
+  hidden.value = false
+  clearTimer()
+  index.value = 0
+}
+
+function pause() {
+  paused.value = true
+}
+
+function show() {
+  hidden.value = false
+}
+
+function hide() {
+  hidden.value = true
+}
+
+/**
+ * 添加弹幕 添加至播放位置
+ * @param {Danmu} dm 播放的弹幕
+ * @return {number} 弹幕的下标
+ */
+function add(dm: Danmu): number {
+  if (index.value >= danmuList.value.length - 1) {
+    danmuList.value.push(dm)
+    return danmuList.value.length - 1
+  } else {
+    const _index = index.value % danmuList.value.length
+    danmuList.value.splice(_index, 0, dm)
+    return _index - 1
+  }
+}
+
+/**
+ * 添加弹幕 添加至末尾
+ * @param {Danmu} dm 播放的弹幕
+ * @return {number} 弹幕的下标
+ */
+function push(dm: Danmu): number {
+  danmuList.value.push(dm)
+  return danmuList.value.length - 1
+}
+
+function resize() {
+  initCore()
+  const items = dmContainer.value.getElementsByClassName('dm')
+  for (let i = 0; i < items.length; i++) {
+    const el = items[i] as HTMLDivElement
+    el.style.setProperty('--dm-scroll-width', `-${containerWidth.value + (el.offsetWidth * 2)}px`)
+    el.style.left = `${containerWidth.value}px`
+    el.style.animationDuration = `${containerWidth.value / speeds}s`
+  }
+}
+
+onMounted(() => {
+  init()
+})
+
+onBeforeUnmount(() => {
+  clear()
+})
+
+defineExpose({
+  add, push,
+  play, pause, reset, resize, show, hide, clear
+})
+
+</script>
+<template>
+  <div ref="container" class="container">
+    <div ref="dmContainer" :class="['danmus', { show: !hidden }, { paused: paused }]">
+      <!-- <slot :danmu="{ title: '弹幕', user: '用户' }" :index="1"></slot> -->
+      <!-- <slot name="dm" :danmu="{ title: '弹幕', user: '用户' }" :index="1"></slot> -->
+    </div>
+  </div>
+</template>
+<style lang="scss">
+.container {
+  position: relative;
+  overflow: hidden;
+  -webkit-transform: translateZ(0);
+  -moz-transform: translateZ(0);
+  -ms-transform: translateZ(0);
+  -o-transform: translateZ(0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000;
+  -webkit-backface-visibility: hidden;
+  -webkit-perspective: 1000;
+
+  .danmus {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    -webkit-transition: all 0.3s;
+    transition: all 0.3s;
+    -webkit-transform: translateZ(0);
+    -moz-transform: translateZ(0);
+    -ms-transform: translateZ(0);
+    -o-transform: translateZ(0);
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000;
+    -webkit-backface-visibility: hidden;
+    -webkit-perspective: 1000;
+
+    &.show {
+      opacity: 1;
+    }
+
+    &.paused {
+      .dm.move {
+        animation-play-state: paused;
+      }
+    }
+
+    .dm {
+      position: absolute;
+      font-size: 20px;
+      color: #ccc;
+      padding: 0 10px;
+      text-align: center;
+      white-space: pre;
+      // transform: translateX(0);
+      transform-style: preserve-3d;
+      -webkit-transform: translateZ(0);
+      -moz-transform: translateZ(0);
+      -ms-transform: translateZ(0);
+      -o-transform: translateZ(0);
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      perspective: 1000;
+      -webkit-backface-visibility: hidden;
+      -webkit-perspective: 1000;
+      cursor: pointer;
+
+      &.move {
+        will-change: transform;
+        animation-name: moveLeft;
+        animation-timing-function: linear;
+        animation-play-state: running;
+      }
+
+      &.pause {
+        animation-play-state: paused;
+        z-index: 10;
+      }
+    }
+
+    @keyframes moveLeft {
+      from {
+        transform: translateX(0);
+      }
+
+      to {
+        transform: translateX(var(--dm-scroll-width));
+      }
+    }
+
+    @-webkit-keyframes moveLeft {
+      from {
+        -webkit-transform: translateX(0);
+      }
+
+      to {
+        -webkit-transform: translateX(var(--dm-scroll-width));
+      }
+    }
+  }
+}
+</style>
