@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 18:30:13
+ * @LastEditTime: 2023-05-30 18:45:26
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -143,9 +143,9 @@ function draw() {
 /**
  * 插入弹幕
  */
-function insert() {
+function insert(dm?: Danmu) {
   const _index: number = loop ? index.value % danmuList.value.length : index.value // 将要播放的弹幕的下标
-  const _danmu: Danmu = danmuList.value[_index]
+  const _danmu: Danmu = dm || danmuList.value[_index]
   let el: HTMLDivElement = document.createElement('div')
   let sel: HTMLDivElement = document.createElement('div')
   if (useSlot) {
@@ -423,6 +423,11 @@ function hide() {
  * @return {number} 弹幕的下标
  */
 function add(dm: Danmu): number {
+  if (!Object.keys(danChannel.value).length) {
+    insert(dm)
+    return 0
+  }
+  play()
   if (index.value >= danmuList.value.length - 1) {
     danmuList.value.push(dm)
     return danmuList.value.length - 1
