@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 14:17:43
+ * @LastEditTime: 2023-05-30 16:22:10
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -68,6 +68,7 @@ const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChann
 const emit = defineEmits<{
   (e: 'list-end'): void
   (e: 'play-end', index: number): void
+  (e: 'dm-click', danmus: Danmu, index: number): void
   (e: 'update:danmus', danmus: Danmu): void
 }>()
 
@@ -84,6 +85,7 @@ const index = ref<number>(0)
 const hidden = ref<boolean>(false)
 const paused = ref<boolean>(false)
 const danChannel = ref<DanChannel>({})
+const suspendList = ref<HTMLElement[]>([])
 
 const danmuList = useModelWrapper<Danmu[]>(danmus, emit, 'danmus')
 
@@ -91,7 +93,6 @@ const dmChannels = computed<number>(() => channels || calcChannels.value)
 
 function init() {
   initCore()
-  isSuspend && initSuspendEvents()
   if (autoplay) {
     play()
   }
@@ -176,7 +177,7 @@ function insert() {
           emit('play-end', Number(el.dataset.index))
         }
         dmContainer.value && dmContainer.value.removeChild(el)
-      })
+      }, { once: true })
       index.value++
     } else {
       dmContainer.value.removeChild(el)
@@ -214,13 +215,13 @@ function getChannelIndex(el: HTMLDivElement): number {
 
         if (j === items.length - 1) {
           danChannel.value[i].push(el)
-          el.addEventListener('animationend', () => danChannel.value[i].splice(0, 1))
+          el.addEventListener('animationend', () => danChannel.value[i].splice(0, 1), { once: true })
           return i % dmChannels.value
         }
       }
     } else {
       danChannel.value[i] = [el]
-      el.addEventListener('animationend', () => danChannel.value[i].splice(0, 1))
+      el.addEventListener('animationend', () => danChannel.value[i].splice(0, 1), { once: true })
       return i % dmChannels.value
     }
   }
@@ -252,7 +253,29 @@ function createVDom(danmu: Danmu, index: number) {
   const div = ref<HTMLDivElement>(document.createElement('div'))
   render(h('div', {
     onClick: () => {
-      console.log(danmu, index)
+      emit('dm-click', danmu, index)
+    },
+    onmouseover: (e: { stopImmediatePropagation: () => void; target: { closest: (arg0: string) => HTMLElement; }; }) => {
+      if (!isSuspend) return
+      // e.stopImmediatePropagation()
+      const dm: HTMLElement = e.target.closest('.dm')
+      if (!dm) return
+      dm.classList.add('pause')
+      if (!suspendList.value.includes(dm)) {
+        suspendList.value.push(dm)
+        cancelSuspend()
+      }
+    },
+    onmouseout: (e: { stopImmediatePropagation: () => void; target: { closest: (arg0: string) => HTMLElement; }; }) => {
+      if (!isSuspend) return
+      // e.stopImmediatePropagation()
+      const dm: HTMLElement = e.target.closest('.dm')
+      if (!dm) return
+      dm.classList.remove('pause')
+      if (suspendList.value.includes(dm)) {
+        const index: number = suspendList.value.indexOf(dm)
+        suspendList.value.splice(index, 1)
+      }
     }
   },
     [slots.dm && slots.dm({
@@ -261,6 +284,21 @@ function createVDom(danmu: Danmu, index: number) {
     })]), div.value as HTMLDivElement)
 
   return div.value.childNodes[0]
+}
+
+/**
+ * 监听移出当前元素 取消移动端悬浮
+ */
+function cancelSuspend() {
+  document.body.addEventListener('mouseout', e => {
+    e.stopImmediatePropagation()
+    if (suspendList.value.length) {
+      suspendList.value.map(el => {
+        el.classList.remove('pause')
+      })
+      suspendList.value = []
+    }
+  }, { once: true })
 }
 
 /**
@@ -277,7 +315,6 @@ function initSuspendEvents() {
     target.classList.add('pause')
     suspendDanmus.push(target)
   })
-
   dmContainer.value.addEventListener('mouseout', e => {
     let target = e.target as EventTarget & HTMLElement
     if (!target.className.includes('dm')) {
@@ -312,6 +349,7 @@ function clear() {
   hidden.value = false
   clearTimer()
   index.value = 0
+  suspendList.value = []
 }
 
 function pause() {
@@ -432,7 +470,6 @@ defineExpose({
       position: absolute;
       font-size: 20px;
       color: #ccc;
-      padding: 0 10px;
       text-align: center;
       white-space: pre;
       // transform: translateX(0);
