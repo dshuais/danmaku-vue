@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 18:29:30
+ * @LastEditTime: 2023-05-31 11:13:10
  * @description: 心平气和
 -->
 <script setup lang="ts">
@@ -468,6 +468,9 @@ function handleDanmu(type: string) {
     case 'add':
       danmaku.value.add('我是最新的一条弹幕')
       break;
+    case 'insert':
+      danmaku.value.insert('我是insert插入最新的一条弹幕')
+      break;
     case 'push':
       danmaku.value.push('我是添加到末尾的弹幕')
       break;
@@ -492,7 +495,7 @@ function handleIndex(index: number) {
 
 <template>
   <Danmu ref="danmaku" use-slot :danmus="danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
-    @play-end="handlePlayEnd" loop randomChannel is-suspend useSuspendSlot>
+    @play-end="handlePlayEnd" randomChannel is-suspend useSuspendSlot>
     <template #dm="{ danmu, index }">
       <div class="danmu-item">{{ danmu }},{{ index }}</div>
     </template>
@@ -509,6 +512,7 @@ function handleIndex(index: number) {
   <button @click="handleDanmu('clear')">clear</button>
   <button @click="handleDanmu('show')">show</button>
   <button @click="handleDanmu('hide')">hide</button>
+  <button @click="handleDanmu('insert')">insert</button>
   <button @click="handleDanmu('add')">add</button>
   <button @click="handleDanmu('push')">push</button>
   <button @click="handleDanmu('reset')">reset</button>

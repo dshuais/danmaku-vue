@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 18:45:26
+ * @LastEditTime: 2023-05-31 11:15:35
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -86,6 +86,7 @@ let timer = null
 const calcChannels = ref<number>(0)
 const danmuHeight = ref<number>(0)
 const index = ref<number>(0)
+const insertIndex = ref<number>(0)
 const hidden = ref<boolean>(false)
 const paused = ref<boolean>(false)
 const danChannel = ref<DanChannel>({})
@@ -121,7 +122,7 @@ function play() {
 
 function draw() {
   if (!paused.value && danmuList.value.length) {
-    if (index.value > danmuList.value.length - 1) {
+    if (index.value > danmuList.value.length - 1 + insertIndex.value) {
       const screenDanmus = dmContainer.value.children.length // 当前弹幕条数
       if (loop) {
         if (index.value >= danmuList.value.length) {
@@ -141,10 +142,11 @@ function draw() {
 }
 
 /**
- * 插入弹幕
+ * 插入弹幕 可暴露至外部，'实时'插入 不进行数据绑定 场景：不循环且弹幕播放完成后的情况下
+ * @param {Danmu} dm 播放的弹幕
  */
 function insert(dm?: Danmu) {
-  const _index: number = loop ? index.value % danmuList.value.length : index.value // 将要播放的弹幕的下标
+  const _index: number = loop ? index.value % danmuList.value.length : index.value - insertIndex.value // 将要播放的弹幕的下标
   const _danmu: Danmu = dm || danmuList.value[_index]
   let el: HTMLDivElement = document.createElement('div')
   let sel: HTMLDivElement = document.createElement('div')
@@ -200,6 +202,10 @@ function insert(dm?: Danmu) {
         dmContainer.value && dmContainer.value.removeChild(el)
       }, { once: true })
       index.value++
+      if (dm) {
+        paused.value = false
+        insertIndex.value++
+      }
     } else {
       dmContainer.value.removeChild(el)
     }
@@ -423,17 +429,14 @@ function hide() {
  * @return {number} 弹幕的下标
  */
 function add(dm: Danmu): number {
-  if (!Object.keys(danChannel.value).length) {
-    insert(dm)
-    return 0
-  }
-  play()
   if (index.value >= danmuList.value.length - 1) {
     danmuList.value.push(dm)
+    play()
     return danmuList.value.length - 1
   } else {
     const _index = index.value % danmuList.value.length
     danmuList.value.splice(_index, 0, dm)
+    play()
     return _index - 1
   }
 }
@@ -468,7 +471,7 @@ onBeforeUnmount(() => {
 })
 
 defineExpose({
-  add, push,
+  add, push, insert,
   play, pause, reset, resize, show, hide, clear
 })
 
