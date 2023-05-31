@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-31 11:15:35
+ * @LastEditTime: 2023-05-31 11:20:13
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -164,7 +164,7 @@ function insert(dm?: Danmu) {
   if (isSuspend && useSuspendSlot) {
     sel = createSuspendVDom(_danmu, _index).childNodes[1] as HTMLDivElement
     sel.classList.add('dm-suspend')
-    sel.style.background = 'inherit'
+    sel.style.background = 'transparent' // 'inherit'
     sel.style.display = 'none'
     if (useSlot) {
       sel && el.childNodes[1] && el.childNodes[1].appendChild(sel)
