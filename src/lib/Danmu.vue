@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-30 14:17:43
+ * @LastEditTime: 2023-05-31 11:20:13
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -11,7 +11,7 @@ import { Danmu, DanChannel, Props } from './typings/Danmaku'
 import { useModelWrapper } from './utils';
 
 const slots = defineSlots()
-const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChannel, fontSize, top, right, isSuspend, extraStyle } = withDefaults(defineProps<Props>(), {
+const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChannel, fontSize, top, right, isSuspend, extraStyle, useSuspendSlot } = withDefaults(defineProps<Props>(), {
   /**
  * 弹幕列表
  */
@@ -32,6 +32,10 @@ const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChann
    * 是否开启插槽 默认false
    */
   useSlot: false,
+  /**
+   * 是否开启悬浮插槽 默认false
+   */
+  useSuspendSlot: false,
   /**
   * 弹幕刷新频率(ms) 默认100
   */
@@ -68,6 +72,7 @@ const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChann
 const emit = defineEmits<{
   (e: 'list-end'): void
   (e: 'play-end', index: number): void
+  (e: 'dm-click', danmus: Danmu, index: number): void
   (e: 'update:danmus', danmus: Danmu): void
 }>()
 
@@ -81,9 +86,12 @@ let timer = null
 const calcChannels = ref<number>(0)
 const danmuHeight = ref<number>(0)
 const index = ref<number>(0)
+const insertIndex = ref<number>(0)
 const hidden = ref<boolean>(false)
 const paused = ref<boolean>(false)
 const danChannel = ref<DanChannel>({})
+const suspendList = ref<HTMLElement[]>([])
+const suspendRight = ref<number>(10)
 
 const danmuList = useModelWrapper<Danmu[]>(danmus, emit, 'danmus')
 
@@ -91,7 +99,7 @@ const dmChannels = computed<number>(() => channels || calcChannels.value)
 
 function init() {
   initCore()
-  isSuspend && initSuspendEvents()
+  isSuspend && !useSlot && initSuspendEvents()
   if (autoplay) {
     play()
   }
@@ -114,7 +122,7 @@ function play() {
 
 function draw() {
   if (!paused.value && danmuList.value.length) {
-    if (index.value > danmuList.value.length - 1) {
+    if (index.value > danmuList.value.length - 1 + insertIndex.value) {
       const screenDanmus = dmContainer.value.children.length // 当前弹幕条数
       if (loop) {
         if (index.value >= danmuList.value.length) {
@@ -134,12 +142,14 @@ function draw() {
 }
 
 /**
- * 插入弹幕
+ * 插入弹幕 可暴露至外部，'实时'插入 不进行数据绑定 场景：不循环且弹幕播放完成后的情况下
+ * @param {Danmu} dm 播放的弹幕
  */
-function insert() {
-  const _index: number = loop ? index.value % danmuList.value.length : index.value // 将要播放的弹幕的下标
-  const _danmu: Danmu = danmuList.value[_index]
+function insert(dm?: Danmu) {
+  const _index: number = loop ? index.value % danmuList.value.length : index.value - insertIndex.value // 将要播放的弹幕的下标
+  const _danmu: Danmu = dm || danmuList.value[_index]
   let el: HTMLDivElement = document.createElement('div')
+  let sel: HTMLDivElement = document.createElement('div')
   if (useSlot) {
     el = createVDom(_danmu, _index) as HTMLDivElement
   } else {
@@ -150,6 +160,19 @@ function insert() {
   }
   el.style.opacity = '0'
   el.classList.add('dm')
+
+  if (isSuspend && useSuspendSlot) {
+    sel = createSuspendVDom(_danmu, _index).childNodes[1] as HTMLDivElement
+    sel.classList.add('dm-suspend')
+    sel.style.background = 'transparent' // 'inherit'
+    sel.style.display = 'none'
+    if (useSlot) {
+      sel && el.childNodes[1] && el.childNodes[1].appendChild(sel)
+    } else {
+      sel && el.appendChild(sel)
+    }
+  }
+
   dmContainer.value && dmContainer.value.appendChild(el)
   nextTick(() => {
     if (!danmuHeight.value) {
@@ -159,6 +182,7 @@ function insert() {
     if (!channels) {
       calcChannels.value = Math.floor(containerHeight.value / (danmuHeight.value + top))
     }
+    suspendRight.value = sel.offsetWidth + 10
     const channelIndex = getChannelIndex(el)
     if (channelIndex >= 0) {
       const width = el.offsetWidth
@@ -176,8 +200,12 @@ function insert() {
           emit('play-end', Number(el.dataset.index))
         }
         dmContainer.value && dmContainer.value.removeChild(el)
-      })
+      }, { once: true })
       index.value++
+      if (dm) {
+        paused.value = false
+        insertIndex.value++
+      }
     } else {
       dmContainer.value.removeChild(el)
     }
@@ -209,18 +237,18 @@ function getChannelIndex(el: HTMLDivElement): number {
          * 
          * 没有任何一条轨道可加入 返回-1
          */
-        const dmRight = getDanmuRight(items[j]) - 10
+        const dmRight = getDanmuRight(items[j]) - suspendRight.value
         if (dmRight <= (el.offsetWidth - items[j].offsetWidth) * 0.88 || dmRight <= 0) break
 
         if (j === items.length - 1) {
           danChannel.value[i].push(el)
-          el.addEventListener('animationend', () => danChannel.value[i].splice(0, 1))
+          el.addEventListener('animationend', () => danChannel.value[i].splice(0, 1), { once: true })
           return i % dmChannels.value
         }
       }
     } else {
       danChannel.value[i] = [el]
-      el.addEventListener('animationend', () => danChannel.value[i].splice(0, 1))
+      el.addEventListener('animationend', () => danChannel.value[i].splice(0, 1), { once: true })
       return i % dmChannels.value
     }
   }
@@ -252,7 +280,37 @@ function createVDom(danmu: Danmu, index: number) {
   const div = ref<HTMLDivElement>(document.createElement('div'))
   render(h('div', {
     onClick: () => {
-      console.log(danmu, index)
+      emit('dm-click', danmu, index)
+    },
+    onmouseover: (e: { target: { closest: (arg0: string) => HTMLElement; childNodes: any; }; }) => {
+      if (!isSuspend) return
+      // e.stopImmediatePropagation()
+      const dm: HTMLElement = e.target.closest('.dm')
+      if (!dm) return
+      const suspend = dm.childNodes[1].childNodes[1] as HTMLElement
+      if (isSuspend && suspend) {
+        suspend.style.display = 'flex'
+      }
+      dm.classList.add('pause')
+      if (!suspendList.value.includes(dm)) {
+        suspendList.value.push(dm)
+        cancelSuspend()
+      }
+    },
+    onmouseout: (e: { stopImmediatePropagation: () => void; target: { closest: (arg0: string) => HTMLElement; }; }) => {
+      if (!isSuspend) return
+      // e.stopImmediatePropagation()
+      const dm: HTMLElement = e.target.closest('.dm')
+      if (!dm) return
+      const suspend = dm.childNodes[1].childNodes[1] as HTMLElement
+      if (isSuspend && suspend) {
+        suspend.style.display = 'none'
+      }
+      dm.classList.remove('pause')
+      if (suspendList.value.includes(dm)) {
+        const index: number = suspendList.value.indexOf(dm)
+        suspendList.value.splice(index, 1)
+      }
     }
   },
     [slots.dm && slots.dm({
@@ -261,6 +319,37 @@ function createVDom(danmu: Danmu, index: number) {
     })]), div.value as HTMLDivElement)
 
   return div.value.childNodes[0]
+}
+
+/**
+ * 创建suspend dom节点
+ * @param {Danmu} danmu 当前弹幕数据
+ * @param {number} index 当前弹幕下标
+ * @return dom节点
+ */
+function createSuspendVDom(danmu: Danmu, index: number) {
+  const div = ref<HTMLElement>(document.createElement('div'))
+  render(h('div', {},
+    [slots.suspend && slots.suspend({
+      danmu, index
+    })]), div.value as HTMLElement)
+
+  return div.value.childNodes[0]
+}
+
+/**
+ * 监听移出当前元素 取消移动端悬浮
+ */
+function cancelSuspend() {
+  document.body.addEventListener('mouseout', e => {
+    e.stopImmediatePropagation()
+    if (suspendList.value.length) {
+      suspendList.value.map(el => {
+        el.classList.remove('pause')
+      })
+      suspendList.value = []
+    }
+  }, { once: true })
 }
 
 /**
@@ -274,16 +363,23 @@ function initSuspendEvents() {
       target = target.closest('.dm') || target
     }
     if (!target.className.includes('dm')) return
+    const suspend = target.childNodes[1] as HTMLElement
+    if (isSuspend && suspend) {
+      suspend.style.display = 'flex'
+    }
     target.classList.add('pause')
     suspendDanmus.push(target)
   })
-
   dmContainer.value.addEventListener('mouseout', e => {
     let target = e.target as EventTarget & HTMLElement
     if (!target.className.includes('dm')) {
       target = target.closest('.dm') || target
     }
     if (!target.className.includes('dm')) return
+    const suspend = target.childNodes[1] as HTMLElement
+    if (isSuspend && suspend) {
+      suspend.style.display = 'none'
+    }
     target.classList.remove('pause')
     suspendDanmus.forEach((item) => {
       item.classList.remove('pause')
@@ -312,6 +408,7 @@ function clear() {
   hidden.value = false
   clearTimer()
   index.value = 0
+  suspendList.value = []
 }
 
 function pause() {
@@ -334,10 +431,12 @@ function hide() {
 function add(dm: Danmu): number {
   if (index.value >= danmuList.value.length - 1) {
     danmuList.value.push(dm)
+    play()
     return danmuList.value.length - 1
   } else {
     const _index = index.value % danmuList.value.length
     danmuList.value.splice(_index, 0, dm)
+    play()
     return _index - 1
   }
 }
@@ -372,7 +471,7 @@ onBeforeUnmount(() => {
 })
 
 defineExpose({
-  add, push,
+  add, push, insert,
   play, pause, reset, resize, show, hide, clear
 })
 
@@ -382,6 +481,7 @@ defineExpose({
     <div ref="dmContainer" :class="['danmus', { show: !hidden }, { paused: paused }]">
       <!-- <slot :danmu="{ title: '弹幕', user: '用户' }" :index="1"></slot> -->
       <!-- <slot name="dm" :danmu="{ title: '弹幕', user: '用户' }" :index="1"></slot> -->
+      <!-- <slot name="suspend" :danmu="{ title: '弹幕', user: '用户' }" :index="1"></slot> -->
     </div>
   </div>
 </template>
@@ -417,6 +517,7 @@ defineExpose({
     perspective: 1000;
     -webkit-backface-visibility: hidden;
     -webkit-perspective: 1000;
+    user-select: none;
 
     &.show {
       opacity: 1;
@@ -432,7 +533,6 @@ defineExpose({
       position: absolute;
       font-size: 20px;
       color: #ccc;
-      padding: 0 10px;
       text-align: center;
       white-space: pre;
       // transform: translateX(0);
@@ -447,6 +547,15 @@ defineExpose({
       -webkit-backface-visibility: hidden;
       -webkit-perspective: 1000;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      &>div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
 
       &.move {
         will-change: transform;

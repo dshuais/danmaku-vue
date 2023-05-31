@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-29 11:53:21
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-29 14:42:19
+ * @LastEditTime: 2023-05-30 16:53:54
  * @description: 心平气和
  */
 
@@ -30,6 +30,7 @@ export type Props = {
    * 是否开启插槽 默认false
    */
   useSlot?: boolean,
+  useSuspendSlot?: boolean,
   /**
   * 弹幕刷新频率(ms) 默认100
   */
