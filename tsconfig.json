@@ -6,8 +6,16 @@
         "./src/*"
       ]
     },
+    // // this enables stricter inference for data properties on `this`
+    // "strict": true,
+    "jsx": "preserve",
     "module": "esnext",
     "moduleResolution": "node",
-    "target": "esnext"
+    "target": "esnext",
+    "declaration": true
   },
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

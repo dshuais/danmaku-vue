@@ -2,14 +2,16 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-31 12:17:00
+ * @LastEditTime: 2023-05-31 15:13:59
  * @description: 心平气和
 -->
 <script setup lang="ts">
-import Danmu from '@/lib/Danmu.vue';
+// import Danmu from '@/lib/Danmaku.vue';
+// import Danmu from '../packages/danmaku';
+import { Danmaku } from '../packages'
 import { ref } from 'vue';
 
-const danmaku = ref<InstanceType<typeof Danmu>>()
+const danmaku = ref<InstanceType<typeof Danmaku>>()
 
 const Danmus = ref<string[]>(['弹幕1', '弹幕2', '弹幕3', '弹幕4', '弹幕5'])
 
@@ -494,7 +496,7 @@ function handleIndex(index: number) {
 </script>
 
 <template>
-  <Danmu ref="danmaku" use-slot :danmus="danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
+  <Danmaku ref="danmaku" use-slot :danmus="danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
     @play-end="handlePlayEnd" randomChannel is-suspend useSuspendSlot>
     <template #dm="{ danmu, index }">
       <div class="danmu-item">{{ danmu }}</div>
@@ -505,7 +507,7 @@ function handleIndex(index: number) {
         <div class="item" @click="handleIndex(index)">👍</div>
       </div>
     </template>
-  </Danmu>
+  </Danmaku>
 
   <button @click="handleDanmu('play')">播放</button>
   <button @click="handleDanmu('stop')">暂停</button>
