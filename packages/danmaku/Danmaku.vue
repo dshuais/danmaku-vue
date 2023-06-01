@@ -2,11 +2,11 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-01 11:10:50
+ * @LastEditTime: 2023-06-01 18:31:59
  * @description: Danmaku
 -->
 <script setup lang="ts">
-import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, render } from 'vue'
+import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, render, toRefs } from 'vue'
 
 /**
  * props类型
@@ -87,7 +87,7 @@ export interface DanChannel {
 }
 
 const slots = defineSlots()
-const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChannel, fontSize, top, right, isSuspend, extraStyle, useSuspendSlot } = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   /**
  * 弹幕列表
  */
@@ -145,10 +145,11 @@ const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChann
    */
   extraStyle: ''
 })
+const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChannel, fontSize, top, right, isSuspend, extraStyle, useSuspendSlot } = toRefs(props)
 const emit = defineEmits<{
   (e: 'list-end'): void
   (e: 'play-end', index: number): void
-  (e: 'dm-click', danmus: Danmu, index: number): void
+  (e: 'dm-click', danmu: Danmu, index: number): void
   (e: 'update:danmus', danmus: Danmu): void
 }>()
 
@@ -169,14 +170,21 @@ const danChannel = ref<DanChannel>({})
 const suspendList = ref<HTMLElement[]>([])
 const suspendRight = ref<number>(10)
 
-const danmuList = useModelWrapper<Danmu[]>(danmus, emit, 'danmus')
+// const danmuList = useModelWrapper<Danmu[]>(danmus, emit, 'danmus')
+const danmuList = computed<Danmu[]>({
+  get: () => danmus.value,
+  set: (value) => {
+    console.log('更新', value);
+    emit(`update:danmus`, value)
+  }
+})
 
-const dmChannels = computed<number>(() => channels || calcChannels.value)
+const dmChannels = computed<number>(() => channels.value || calcChannels.value)
 
 function init() {
   initCore()
-  isSuspend && !useSlot && initSuspendEvents()
-  if (autoplay) {
+  isSuspend.value && !useSlot.value && initSuspendEvents()
+  if (autoplay.value) {
     play()
   }
 }
@@ -191,8 +199,8 @@ function initCore() {
 
 function play() {
   paused.value = false
-  if (!timer) {
-    timer = setInterval(() => draw(), debounce)
+  if (!timer && danmuList.value.length) {
+    timer = setInterval(() => draw(), debounce.value)
   }
 }
 
@@ -200,7 +208,7 @@ function draw() {
   if (!paused.value && danmuList.value.length) {
     if (index.value > danmuList.value.length - 1 + insertIndex.value) {
       const screenDanmus = dmContainer.value.children.length // 当前弹幕条数
-      if (loop) {
+      if (loop.value) {
         if (index.value >= danmuList.value.length) {
           emit('list-end')
           index.value = 0
@@ -222,27 +230,27 @@ function draw() {
  * @param {Danmu} dm 播放的弹幕
  */
 function insert(dm?: Danmu) {
-  const _index: number = loop ? index.value % danmuList.value.length : index.value - insertIndex.value // 将要播放的弹幕的下标
+  const _index: number = loop.value ? index.value % danmuList.value.length : index.value - insertIndex.value // 将要播放的弹幕的下标
   const _danmu: Danmu = dm || danmuList.value[_index]
   let el: HTMLDivElement = document.createElement('div')
   let sel: HTMLDivElement = document.createElement('div')
-  if (useSlot) {
+  if (useSlot.value) {
     el = createVDom(_danmu, _index) as HTMLDivElement
   } else {
     el.innerHTML = _danmu as string
-    el.setAttribute('style', extraStyle)
-    el.style.fontSize = `${fontSize}px`
-    el.style.lineHeight = `${fontSize}px`
+    el.setAttribute('style', extraStyle.value)
+    el.style.fontSize = `${fontSize.value}px`
+    el.style.lineHeight = `${fontSize.value}px`
   }
   el.style.opacity = '0'
   el.classList.add('dm')
 
-  if (isSuspend && useSuspendSlot) {
+  if (isSuspend.value && useSuspendSlot.value) {
     sel = createSuspendVDom(_danmu, _index).childNodes[1] as HTMLDivElement
     sel.classList.add('dm-suspend')
     sel.style.background = 'transparent' // 'inherit'
     sel.style.display = 'none'
-    if (useSlot) {
+    if (useSlot.value) {
       sel && el.childNodes[1] && el.childNodes[1].appendChild(sel)
     } else {
       sel && el.appendChild(sel)
@@ -255,8 +263,8 @@ function insert(dm?: Danmu) {
       danmuHeight.value = el.offsetHeight
     }
     // 没有设置轨道数 则在弹幕区域全屏播放
-    if (!channels) {
-      calcChannels.value = Math.floor(containerHeight.value / (danmuHeight.value + top))
+    if (!channels.value) {
+      calcChannels.value = Math.floor(containerHeight.value / (danmuHeight.value + top.value))
     }
     suspendRight.value = sel.offsetWidth + 10
     const channelIndex = getChannelIndex(el)
@@ -265,14 +273,14 @@ function insert(dm?: Danmu) {
       const height = danmuHeight.value
       el.classList.add('move')
       el.dataset.index = `${_index}`
-      el.style.top = channelIndex * (height + top) + 'px'
-      el.style.width = width + right + 'px'
+      el.style.top = channelIndex * (height + top.value) + 'px'
+      el.style.width = width + right.value + 'px'
       el.style.opacity = '1'
       el.style.setProperty('--dm-scroll-width', `-${containerWidth.value + (width * 2)}px`)
       el.style.left = `${containerWidth.value}px`
-      el.style.animationDuration = `${containerWidth.value / speeds}s`
+      el.style.animationDuration = `${containerWidth.value / speeds.value}s`
       el.addEventListener('animationend', () => {
-        if (Number(el.dataset.index) === danmuList.value.length - 1 && !loop) {
+        if (Number(el.dataset.index) === danmuList.value.length - 1 && !loop.value) {
           emit('play-end', Number(el.dataset.index))
         }
         dmContainer.value && dmContainer.value.removeChild(el)
@@ -294,8 +302,9 @@ function insert(dm?: Danmu) {
  * @return {number}
  */
 function getChannelIndex(el: HTMLDivElement): number {
+  debugger
   let _channels = [...Array(dmChannels.value).keys()]
-  if (randomChannel) {
+  if (randomChannel.value) {
     _channels = _channels.sort(() => 0.5 - Math.random())
   }
 
@@ -359,12 +368,12 @@ function createVDom(danmu: Danmu, index: number) {
       emit('dm-click', danmu, index)
     },
     onmouseover: (e: { target: { closest: (arg0: string) => HTMLElement; childNodes: any; }; }) => {
-      if (!isSuspend) return
+      if (!isSuspend.value) return
       // e.stopImmediatePropagation()
       const dm: HTMLElement = e.target.closest('.dm')
       if (!dm) return
       const suspend = dm.childNodes[1].childNodes[1] as HTMLElement
-      if (isSuspend && suspend) {
+      if (isSuspend.value && suspend) {
         suspend.style.display = 'flex'
       }
       dm.classList.add('pause')
@@ -374,12 +383,12 @@ function createVDom(danmu: Danmu, index: number) {
       }
     },
     onmouseout: (e: { stopImmediatePropagation: () => void; target: { closest: (arg0: string) => HTMLElement; }; }) => {
-      if (!isSuspend) return
+      if (!isSuspend.value) return
       // e.stopImmediatePropagation()
       const dm: HTMLElement = e.target.closest('.dm')
       if (!dm) return
       const suspend = dm.childNodes[1].childNodes[1] as HTMLElement
-      if (isSuspend && suspend) {
+      if (isSuspend.value && suspend) {
         suspend.style.display = 'none'
       }
       dm.classList.remove('pause')
@@ -440,7 +449,7 @@ function initSuspendEvents() {
     }
     if (!target.className.includes('dm')) return
     const suspend = target.childNodes[1] as HTMLElement
-    if (isSuspend && suspend) {
+    if (isSuspend.value && suspend) {
       suspend.style.display = 'flex'
     }
     target.classList.add('pause')
@@ -453,7 +462,7 @@ function initSuspendEvents() {
     }
     if (!target.className.includes('dm')) return
     const suspend = target.childNodes[1] as HTMLElement
-    if (isSuspend && suspend) {
+    if (isSuspend.value && suspend) {
       suspend.style.display = 'none'
     }
     target.classList.remove('pause')
@@ -534,8 +543,12 @@ function resize() {
     const el = items[i] as HTMLDivElement
     el.style.setProperty('--dm-scroll-width', `-${containerWidth.value + (el.offsetWidth * 2)}px`)
     el.style.left = `${containerWidth.value}px`
-    el.style.animationDuration = `${containerWidth.value / speeds}s`
+    el.style.animationDuration = `${containerWidth.value / speeds.value}s`
   }
+}
+
+function getPlayState(): boolean {
+  return !paused.value
 }
 
 function useModelWrapper<T>(data: any, emit: Function, name = 'modelValue', translater?: Function) {
@@ -557,7 +570,7 @@ onBeforeUnmount(() => {
 
 defineExpose({
   add, push, insert,
-  play, pause, reset, resize, show, hide, clear
+  play, pause, reset, resize, show, hide, clear, getPlayState
 })
 
 </script>
