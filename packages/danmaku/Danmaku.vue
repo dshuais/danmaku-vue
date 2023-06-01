@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-01 18:31:59
+ * @LastEditTime: 2023-06-01 19:06:16
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -302,7 +302,6 @@ function insert(dm?: Danmu) {
  * @return {number}
  */
 function getChannelIndex(el: HTMLDivElement): number {
-  debugger
   let _channels = [...Array(dmChannels.value).keys()]
   if (randomChannel.value) {
     _channels = _channels.sort(() => 0.5 - Math.random())
