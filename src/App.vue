@@ -2,21 +2,16 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-01 10:04:13
+ * @LastEditTime: 2023-06-01 18:11:22
  * @description: 心平气和
 -->
 <script setup lang="ts">
-// import Danmu from '@/lib/Danmaku.vue';
-// import Danmu from '../packages/danmaku';
 import Danmaku from '../packages'
-// import { Danmaku } from '../dist/danmaku-vue'
-// import '../dist/style.css'
-// import { Danmaku } from '../dist/danmaku-vue'
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 
 const danmaku = ref<InstanceType<typeof Danmaku>>()
 
-const Danmus = ref<string[]>(['弹幕1', '弹幕2', '弹幕3', '弹幕4', '弹幕5'])
+const Danmus = ref<string[]>([])
 
 // 弹幕来自b站首页
 const danmus = [
@@ -496,10 +491,16 @@ function handleIndex(index: number) {
   console.log(index);
 }
 
+onMounted(() => {
+  setTimeout(() => {
+    console.log('完成');
+    Danmus.value = danmus.slice(0, 10)
+  }, 2000);
+})
 </script>
 
 <template>
-  <Danmaku ref="danmaku" use-slot :danmus="danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
+  <Danmaku ref="danmaku" use-slot :danmus="Danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
     @play-end="handlePlayEnd" randomChannel is-suspend useSuspendSlot>
     <template #dm="{ danmu, index }">
       <div class="danmu-item">{{ danmu }}</div>
