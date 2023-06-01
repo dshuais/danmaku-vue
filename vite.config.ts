@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-01 11:04:36
+ * @LastEditTime: 2023-06-01 14:56:10
  * @description: 心平气和
  */
 import { fileURLToPath, URL } from 'node:url'
@@ -15,6 +15,7 @@ import libcss from 'vite-plugin-libcss'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue(), dts({ include: './packages/danmaku' }), libcss()],
+  // plugins: [vue()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
@@ -29,6 +30,8 @@ export default defineConfig({
     hmr: true, // hmr热更新
     strictPort: false, // 为true若端口已被占用则会直接退出
   },
+
+  // base: 'https://dshuais.github.io/',
 
   build: {
     cssCodeSplit: true,
