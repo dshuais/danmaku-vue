@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-31 15:01:49
+ * @LastEditTime: 2023-06-01 10:06:04
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -85,7 +85,6 @@ export type Danmu = string | CustomDanmu
 export interface DanChannel {
   [index: number]: [HTMLDivElement]
 }
-
 
 const slots = defineSlots()
 const { danmus, channels, autoplay, loop, useSlot, debounce, speeds, randomChannel, fontSize, top, right, isSuspend, extraStyle, useSuspendSlot } = withDefaults(defineProps<Props>(), {

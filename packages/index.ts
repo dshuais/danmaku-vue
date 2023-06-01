@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-31 15:11:03
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-31 15:11:46
+ * @LastEditTime: 2023-06-01 10:03:54
  * @description: packages
  */
 import type { App } from 'vue'
@@ -31,7 +31,7 @@ export {
 }
 
 const DanmakuVue = {
-  install
+  // install
 }
 
-export default DanmakuVue
+export default Danmaku

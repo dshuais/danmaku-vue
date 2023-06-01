@@ -12,10 +12,12 @@
     "module": "esnext",
     "moduleResolution": "node",
     "target": "esnext",
-    "declaration": true
+    "declaration": true,
+    "declarationDir": "dist/typings"
   },
   "exclude": [
     "node_modules",
     "dist"
-  ]
+  ],
+  "include": ["packages/danmaku/**/*"]
 }

@@ -2,13 +2,16 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-31 15:13:59
+ * @LastEditTime: 2023-06-01 10:04:13
  * @description: 心平气和
 -->
 <script setup lang="ts">
 // import Danmu from '@/lib/Danmaku.vue';
 // import Danmu from '../packages/danmaku';
-import { Danmaku } from '../packages'
+import Danmaku from '../packages'
+// import { Danmaku } from '../dist/danmaku-vue'
+// import '../dist/style.css'
+// import { Danmaku } from '../dist/danmaku-vue'
 import { ref } from 'vue';
 
 const danmaku = ref<InstanceType<typeof Danmaku>>()
@@ -453,34 +456,34 @@ function handlePlayEnd(index: number) {
 function handleDanmu(type: string) {
   switch (type) {
     case 'play':
-      danmaku.value.play()
+      danmaku.value?.play()
       break;
     case 'stop':
-      danmaku.value.pause()
+      danmaku.value?.pause()
       break;
     case 'hide':
-      danmaku.value.hide()
+      danmaku.value?.hide()
       break;
     case 'show':
-      danmaku.value.show()
+      danmaku.value?.show()
       break;
     case 'clear':
-      danmaku.value.clear()
+      danmaku.value?.clear()
       break;
     case 'add':
-      danmaku.value.add('我是最新的一条弹幕')
+      danmaku.value?.add('我是最新的一条弹幕')
       break;
     case 'insert':
-      danmaku.value.insert('我是insert插入最新的一条弹幕')
+      danmaku.value?.insert('我是insert插入最新的一条弹幕')
       break;
     case 'push':
-      danmaku.value.push('我是添加到末尾的弹幕')
+      danmaku.value?.push('我是添加到末尾的弹幕')
       break;
     case 'reset':
-      danmaku.value.reset()
+      danmaku.value?.reset()
       break;
     case 'resize':
-      danmaku.value.resize()
+      danmaku.value?.resize()
       break;
   }
 }
