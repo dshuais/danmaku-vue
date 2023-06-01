@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-01 09:30:39
+ * @LastEditTime: 2023-06-01 11:04:36
  * @description: 心平气和
  */
 import { fileURLToPath, URL } from 'node:url'
@@ -10,10 +10,11 @@ import { resolve } from 'path'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import dts from 'vite-plugin-dts'
+import libcss from 'vite-plugin-libcss'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue(), dts({ include: './packages/danmaku' })],
+  plugins: [vue(), dts({ include: './packages/danmaku' }), libcss()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
@@ -30,6 +31,7 @@ export default defineConfig({
   },
 
   build: {
+    cssCodeSplit: true,
     lib: {// 构建为库。如果指定了 build.lib，build.cssCodeSplit 会默认为 false。
       // __dirname的值是vite.config.ts文件所在目录
       entry: resolve(__dirname, 'packages/index.ts'),  // entry是必需的，因为库不能使用HTML作为入口。
