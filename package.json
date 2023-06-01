@@ -4,16 +4,15 @@
   "version": "0.1.0",
   "author": "dshuais",
   "private": false,
+  "type": "module",
   "main": "./dist/danmaku-vue.umd.cjs",
   "module": "./dist/danmaku-vue.js",
+  "types": "./dist/index.d.ts",
   "style": "./dist/style.css",
-  "types": "./dist/types/danmaku-vue.d.ts",
-  "type": "module",
   "files": [
     "dist"
   ],
   "exports": {
-    "./dist/style.css": "./dist/style.css",
     "./css": "./dist/style.css",
     ".": {
       "import": "./dist/danmaku-vue.js",

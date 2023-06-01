@@ -13,11 +13,11 @@
     "moduleResolution": "node",
     "target": "esnext",
     "declaration": true,
-    "declarationDir": "dist/typings",
-    "include": ["packages/danmaku/**/*"],
+    "declarationDir": "dist/typings"
   },
   "exclude": [
     "node_modules",
     "dist"
-  ]
+  ],
+  "include": ["packages/danmaku/**/*"]
 }

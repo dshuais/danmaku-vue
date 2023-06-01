@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-31 15:00:44
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-31 16:24:18
+ * @LastEditTime: 2023-06-01 10:04:58
  * @description: Danmaku
  */
 import type { App } from 'vue'

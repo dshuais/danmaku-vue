@@ -2,16 +2,16 @@
  * @Author: dushuai
  * @Date: 2023-05-31 15:11:03
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-31 18:22:16
+ * @LastEditTime: 2023-06-01 10:03:54
  * @description: packages
  */
 import type { App } from 'vue'
 import Danmaku from './danmaku'
 
 // 所有组件列表
-// const components = [
-//   Danmaku
-// ]
+const components = [
+  Danmaku
+]
 
 // 定义 install 方法
 const install = (app: App): void => {
@@ -23,8 +23,7 @@ const install = (app: App): void => {
     解决方式一：使用// @ts-ignore
     解决方式二：使用类型断言 尖括号语法(<string>component.__name) 或 as语法(component.__name as string)
   */
-  // components.forEach(component => app.component(component.__name as string, component))
-  app.component(Danmaku.__name as string, Danmaku)
+  components.forEach(component => app.component(component.__name as string, component))
 }
 
 export {
@@ -32,7 +31,7 @@ export {
 }
 
 const DanmakuVue = {
-  install
+  // install
 }
 
-export default DanmakuVue
+export default Danmaku

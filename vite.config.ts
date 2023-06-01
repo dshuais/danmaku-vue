@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-05-31 18:33:51
+ * @LastEditTime: 2023-06-01 09:30:39
  * @description: 心平气和
  */
 import { fileURLToPath, URL } from 'node:url'
@@ -13,7 +13,7 @@ import dts from 'vite-plugin-dts'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [vue(), dts({ include: './packages/danmaku' })],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))
