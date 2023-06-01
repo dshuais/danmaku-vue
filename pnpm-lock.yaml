@@ -41,6 +41,9 @@ devDependencies:
   vite-plugin-dts:
     specifier: ^2.3.0
     version: 2.3.0(rollup@3.23.0)(vite@4.3.5)
+  vite-plugin-libcss:
+    specifier: ^1.0.6
+    version: 1.0.6(vite@4.3.5)
   vue:
     specifier: ^3.3.2
     version: 3.3.2
@@ -3076,6 +3079,14 @@ packages:
       - '@types/node'
       - rollup
       - supports-color
+    dev: true
+
+  /vite-plugin-libcss@1.0.6(vite@4.3.5):
+    resolution: {integrity: sha512-DUkVPiNEPFRpshhsqek9b/vPH4piytTsrlyRdl84ns4NlR7PJNSmjtDvyBytrL7E+jsrXD5iCEzBOtrChX45CA==}
+    peerDependencies:
+      vite: '*'
+    dependencies:
+      vite: 4.3.5(sass@1.62.1)
     dev: true
 
   /vite@4.3.5(sass@1.62.1):
