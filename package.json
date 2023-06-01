@@ -22,6 +22,7 @@
   "scripts": {
     "dev": "vite",
     "build": "run-p build-only",
+    "pages": "vite build --mode gh-pages",
     "preview": "vite preview",
     "test:unit": "vitest",
     "build-only": "vite build",
