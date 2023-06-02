@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-01 19:06:16
+ * @LastEditTime: 2023-06-02 17:31:48
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -232,6 +232,7 @@ function draw() {
 function insert(dm?: Danmu) {
   const _index: number = loop.value ? index.value % danmuList.value.length : index.value - insertIndex.value // 将要播放的弹幕的下标
   const _danmu: Danmu = dm || danmuList.value[_index]
+  console.log('insert', _danmu);
   let el: HTMLDivElement = document.createElement('div')
   let sel: HTMLDivElement = document.createElement('div')
   if (useSlot.value) {
@@ -266,7 +267,12 @@ function insert(dm?: Danmu) {
     if (!channels.value) {
       calcChannels.value = Math.floor(containerHeight.value / (danmuHeight.value + top.value))
     }
-    suspendRight.value = sel.offsetWidth + 10
+    /**
+       * v1.0.0 bug
+       * suspendRight.value = sel.offsetWidth + 10  ->  suspendRight.value = sel.offsetWidth + 10 + right.value
+       * 优化：
+       */
+    suspendRight.value = sel.offsetWidth + 10 + right.value
     const channelIndex = getChannelIndex(el)
     if (channelIndex >= 0) {
       const width = el.offsetWidth
@@ -274,7 +280,12 @@ function insert(dm?: Danmu) {
       el.classList.add('move')
       el.dataset.index = `${_index}`
       el.style.top = channelIndex * (height + top.value) + 'px'
-      el.style.width = width + right.value + 'px'
+      /**
+       * v1.0.0 bug
+       * el.style.width = width + right.value + 'px'  ->  el.style.width = width + 'px'
+       * 优化：宽度+right时 悬浮触摸区域增加
+       */
+      el.style.width = width + 'px'
       el.style.opacity = '1'
       el.style.setProperty('--dm-scroll-width', `-${containerWidth.value + (width * 2)}px`)
       el.style.left = `${containerWidth.value}px`
