@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-02 17:31:48
+ * @LastEditTime: 2023-06-02 17:52:25
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -233,6 +233,7 @@ function insert(dm?: Danmu) {
   const _index: number = loop.value ? index.value % danmuList.value.length : index.value - insertIndex.value // 将要播放的弹幕的下标
   const _danmu: Danmu = dm || danmuList.value[_index]
   console.log('insert', _danmu);
+
   let el: HTMLDivElement = document.createElement('div')
   let sel: HTMLDivElement = document.createElement('div')
   if (useSlot.value) {
@@ -268,12 +269,15 @@ function insert(dm?: Danmu) {
       calcChannels.value = Math.floor(containerHeight.value / (danmuHeight.value + top.value))
     }
     /**
-       * v1.0.0 bug
+       * v1.0.0 https://github.com/dshuais/danmaku-vue/issues/6
        * suspendRight.value = sel.offsetWidth + 10  ->  suspendRight.value = sel.offsetWidth + 10 + right.value
-       * 优化：
+       * 优化：添加right在安全距离内 不影响el width
        */
     suspendRight.value = sel.offsetWidth + 10 + right.value
-    const channelIndex = getChannelIndex(el)
+    const channelIndex = getChannelIndex(el, dm)
+    if (dm) {
+      console.log('a', channelIndex);
+    }
     if (channelIndex >= 0) {
       const width = el.offsetWidth
       const height = danmuHeight.value
@@ -281,7 +285,7 @@ function insert(dm?: Danmu) {
       el.dataset.index = `${_index}`
       el.style.top = channelIndex * (height + top.value) + 'px'
       /**
-       * v1.0.0 bug
+       * v1.0.0 https://github.com/dshuais/danmaku-vue/issues/6
        * el.style.width = width + right.value + 'px'  ->  el.style.width = width + 'px'
        * 优化：宽度+right时 悬浮触摸区域增加
        */
@@ -312,10 +316,13 @@ function insert(dm?: Danmu) {
  * @param {HTMLDivElement} el 弹幕dom
  * @return {number}
  */
-function getChannelIndex(el: HTMLDivElement): number {
+function getChannelIndex(el: HTMLDivElement, dm): number {
   let _channels = [...Array(dmChannels.value).keys()]
   if (randomChannel.value) {
     _channels = _channels.sort(() => 0.5 - Math.random())
+  }
+  if (dm) {
+    console.log('_channels', _channels);
   }
 
   for (const i of _channels) {
@@ -333,6 +340,9 @@ function getChannelIndex(el: HTMLDivElement): number {
          * 没有任何一条轨道可加入 返回-1
          */
         const dmRight = getDanmuRight(items[j]) - suspendRight.value
+        if (dm) {
+          console.log('dmRight', dmRight);
+        }
         if (dmRight <= (el.offsetWidth - items[j].offsetWidth) * 0.88 || dmRight <= 0) break
 
         if (j === items.length - 1) {
