@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-01 18:11:22
+ * @LastEditTime: 2023-06-02 15:59:34
  * @description: 心平气和
 -->
 <script setup lang="ts">
@@ -494,14 +494,14 @@ function handleIndex(index: number) {
 onMounted(() => {
   setTimeout(() => {
     console.log('完成');
-    Danmus.value = danmus.slice(0, 10)
+    Danmus.value = danmus.slice(0, 50)
   }, 2000);
 })
 </script>
 
 <template>
-  <Danmaku ref="danmaku" use-slot :danmus="Danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
-    @play-end="handlePlayEnd" randomChannel is-suspend useSuspendSlot>
+  <Danmaku ref="danmaku" use-slot loop :danmus="Danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
+    @play-end="handlePlayEnd" randomChannel is-suspend useSuspendSlot :right="20">
     <template #dm="{ danmu, index }">
       <div class="danmu-item">{{ danmu }}</div>
     </template>

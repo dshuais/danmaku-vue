@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-01 19:06:16
+ * @LastEditTime: 2023-06-02 17:52:25
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -226,12 +226,37 @@ function draw() {
 }
 
 /**
+ * 2023.06.03
+ * v0.2.0(beta) https://github.com/dshuais/danmaku-vue/issues/7
+ * 外部用户插入的弹幕list
+ * ∵ setInterval会不停调用 -> 如果一次insert且channelIndex为-1时会导致无法添加成功
+ * ∴ 新增insertList记录外部插入弹幕list
+ */
+const insertList = ref<Danmu[]>([])
+/**
  * 插入弹幕 可暴露至外部，'实时'插入 不进行数据绑定 场景：不循环且弹幕播放完成后的情况下
  * @param {Danmu} dm 播放的弹幕
  */
 function insert(dm?: Danmu) {
+  /**
+   * 2023.06.03
+   * v0.2.0(beta) https://github.com/dshuais/danmaku-vue/issues/7
+   * 记录外部用户插入的弹幕
+   */
+  if (dm) insertList.value.push(dm)
   const _index: number = loop.value ? index.value % danmuList.value.length : index.value - insertIndex.value // 将要播放的弹幕的下标
-  const _danmu: Danmu = dm || danmuList.value[_index]
+  /**
+   * 2023.06.03
+   * v0.2.0(beta) https://github.com/dshuais/danmaku-vue/issues/7
+   * 当前播放弹幕
+   * 修改_danmu取值，如果外部插入的弹幕条数和添加到页面的弹幕条数不统一 优先取外部插入的弹幕
+   */
+  let _danmu: Danmu = dm || danmuList.value[_index]
+  let isOuterDm = false // 当前取值是否是外部插入的弹幕
+  if (insertList.value.length > insertIndex.value) {
+    _danmu = insertList.value[insertIndex.value]
+    isOuterDm = true
+  }
   let el: HTMLDivElement = document.createElement('div')
   let sel: HTMLDivElement = document.createElement('div')
   if (useSlot.value) {
@@ -266,15 +291,28 @@ function insert(dm?: Danmu) {
     if (!channels.value) {
       calcChannels.value = Math.floor(containerHeight.value / (danmuHeight.value + top.value))
     }
-    suspendRight.value = sel.offsetWidth + 10
-    const channelIndex = getChannelIndex(el)
+    /**
+     * 2023.06.02
+     * v0.2.0(beta) https://github.com/dshuais/danmaku-vue/issues/6
+     * suspendRight.value = sel.offsetWidth + 10  ->  suspendRight.value = sel.offsetWidth + 10 + right.value
+     * 优化：添加right在安全距离内 不影响el width
+     */
+    suspendRight.value = sel.offsetWidth + 10 + right.value
+    let channelIndex = getChannelIndex(el)
+
     if (channelIndex >= 0) {
       const width = el.offsetWidth
       const height = danmuHeight.value
       el.classList.add('move')
       el.dataset.index = `${_index}`
       el.style.top = channelIndex * (height + top.value) + 'px'
-      el.style.width = width + right.value + 'px'
+      /**
+       * 2023.06.02
+       * v0.2.0(beta) https://github.com/dshuais/danmaku-vue/issues/6
+       * el.style.width = width + right.value + 'px'  ->  el.style.width = width + 'px'
+       * 优化：宽度+right时 悬浮触摸区域增加
+       */
+      el.style.width = width + 'px'
       el.style.opacity = '1'
       el.style.setProperty('--dm-scroll-width', `-${containerWidth.value + (width * 2)}px`)
       el.style.left = `${containerWidth.value}px`
@@ -286,7 +324,7 @@ function insert(dm?: Danmu) {
         dmContainer.value && dmContainer.value.removeChild(el)
       }, { once: true })
       index.value++
-      if (dm) {
+      if (dm || isOuterDm) {
         paused.value = false
         insertIndex.value++
       }
@@ -294,6 +332,10 @@ function insert(dm?: Danmu) {
       dmContainer.value.removeChild(el)
     }
   })
+}
+
+function setDom(el: HTMLElement) {
+
 }
 
 /**
