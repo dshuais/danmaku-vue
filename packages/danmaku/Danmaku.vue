@@ -592,6 +592,10 @@ function getPlayState(): boolean {
   return !paused.value
 }
 
+function getInsertList(): Danmu[] {
+  return insertList.value
+}
+
 function useModelWrapper<T>(data: any, emit: Function, name = 'modelValue', translater?: Function) {
   return computed<T>({
     get: () => data,
@@ -611,13 +615,15 @@ onBeforeUnmount(() => {
 
 defineExpose({
   add, push, insert,
-  play, pause, reset, resize, show, hide, clear, getPlayState
+  play, pause, reset, resize, show, hide, clear,
+  getPlayState, getInsertList
 })
 
 </script>
 <template>
   <div ref="container" class="danmaku-container">
     <div ref="dmContainer" :class="['danmus', { show: !hidden }, { paused: paused }]">
+      <slot />
       <!-- <slot :danmu="{ title: '弹幕', user: '用户' }" :index="1"></slot> -->
       <!-- <slot name="dm" :danmu="{ title: '弹幕', user: '用户' }" :index="1"></slot> -->
       <!-- <slot name="suspend" :danmu="{ title: '弹幕', user: '用户' }" :index="1"></slot> -->
@@ -671,7 +677,7 @@ defineExpose({
     .dm {
       position: absolute;
       font-size: 20px;
-      color: #ccc;
+      color: #666;
       text-align: center;
       white-space: pre;
       // transform: translateX(0);
