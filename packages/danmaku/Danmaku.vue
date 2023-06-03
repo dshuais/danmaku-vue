@@ -226,14 +226,37 @@ function draw() {
 }
 
 /**
+ * 2023.06.03
+ * v0.2.0(beta) https://github.com/dshuais/danmaku-vue/issues/7
+ * 外部用户插入的弹幕list
+ * ∵ setInterval会不停调用 -> 如果一次insert且channelIndex为-1时会导致无法添加成功
+ * ∴ 新增insertList记录外部插入弹幕list
+ */
+const insertList = ref<Danmu[]>([])
+/**
  * 插入弹幕 可暴露至外部，'实时'插入 不进行数据绑定 场景：不循环且弹幕播放完成后的情况下
  * @param {Danmu} dm 播放的弹幕
  */
 function insert(dm?: Danmu) {
+  /**
+   * 2023.06.03
+   * v0.2.0(beta) https://github.com/dshuais/danmaku-vue/issues/7
+   * 记录外部用户插入的弹幕
+   */
+  if (dm) insertList.value.push(dm)
   const _index: number = loop.value ? index.value % danmuList.value.length : index.value - insertIndex.value // 将要播放的弹幕的下标
-  const _danmu: Danmu = dm || danmuList.value[_index]
-  console.log('insert', _danmu);
-
+  /**
+   * 2023.06.03
+   * v0.2.0(beta) https://github.com/dshuais/danmaku-vue/issues/7
+   * 当前播放弹幕
+   * 修改_danmu取值，如果外部插入的弹幕条数和添加到页面的弹幕条数不统一 优先取外部插入的弹幕
+   */
+  let _danmu: Danmu = dm || danmuList.value[_index]
+  let isOuterDm = false // 当前取值是否是外部插入的弹幕
+  if (insertList.value.length > insertIndex.value) {
+    _danmu = insertList.value[insertIndex.value]
+    isOuterDm = true
+  }
   let el: HTMLDivElement = document.createElement('div')
   let sel: HTMLDivElement = document.createElement('div')
   if (useSlot.value) {
@@ -269,15 +292,14 @@ function insert(dm?: Danmu) {
       calcChannels.value = Math.floor(containerHeight.value / (danmuHeight.value + top.value))
     }
     /**
-       * v1.0.0 https://github.com/dshuais/danmaku-vue/issues/6
-       * suspendRight.value = sel.offsetWidth + 10  ->  suspendRight.value = sel.offsetWidth + 10 + right.value
-       * 优化：添加right在安全距离内 不影响el width
-       */
+     * 2023.06.02
+     * v0.2.0(beta) https://github.com/dshuais/danmaku-vue/issues/6
+     * suspendRight.value = sel.offsetWidth + 10  ->  suspendRight.value = sel.offsetWidth + 10 + right.value
+     * 优化：添加right在安全距离内 不影响el width
+     */
     suspendRight.value = sel.offsetWidth + 10 + right.value
-    const channelIndex = getChannelIndex(el, dm)
-    if (dm) {
-      console.log('a', channelIndex);
-    }
+    let channelIndex = getChannelIndex(el)
+
     if (channelIndex >= 0) {
       const width = el.offsetWidth
       const height = danmuHeight.value
@@ -285,7 +307,8 @@ function insert(dm?: Danmu) {
       el.dataset.index = `${_index}`
       el.style.top = channelIndex * (height + top.value) + 'px'
       /**
-       * v1.0.0 https://github.com/dshuais/danmaku-vue/issues/6
+       * 2023.06.02
+       * v0.2.0(beta) https://github.com/dshuais/danmaku-vue/issues/6
        * el.style.width = width + right.value + 'px'  ->  el.style.width = width + 'px'
        * 优化：宽度+right时 悬浮触摸区域增加
        */
@@ -301,7 +324,7 @@ function insert(dm?: Danmu) {
         dmContainer.value && dmContainer.value.removeChild(el)
       }, { once: true })
       index.value++
-      if (dm) {
+      if (dm || isOuterDm) {
         paused.value = false
         insertIndex.value++
       }
@@ -311,18 +334,19 @@ function insert(dm?: Danmu) {
   })
 }
 
+function setDom(el: HTMLElement) {
+
+}
+
 /**
  * 获取该弹幕要出现的轨道index
  * @param {HTMLDivElement} el 弹幕dom
  * @return {number}
  */
-function getChannelIndex(el: HTMLDivElement, dm): number {
+function getChannelIndex(el: HTMLDivElement): number {
   let _channels = [...Array(dmChannels.value).keys()]
   if (randomChannel.value) {
     _channels = _channels.sort(() => 0.5 - Math.random())
-  }
-  if (dm) {
-    console.log('_channels', _channels);
   }
 
   for (const i of _channels) {
@@ -340,9 +364,6 @@ function getChannelIndex(el: HTMLDivElement, dm): number {
          * 没有任何一条轨道可加入 返回-1
          */
         const dmRight = getDanmuRight(items[j]) - suspendRight.value
-        if (dm) {
-          console.log('dmRight', dmRight);
-        }
         if (dmRight <= (el.offsetWidth - items[j].offsetWidth) * 0.88 || dmRight <= 0) break
 
         if (j === items.length - 1) {

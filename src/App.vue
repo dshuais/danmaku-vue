@@ -500,8 +500,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <Danmaku ref="danmaku" use-slot :danmus="Danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
-    @play-end="handlePlayEnd" randomChannel is-suspend useSuspendSlot :right="200">
+  <Danmaku ref="danmaku" use-slot loop :danmus="Danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
+    @play-end="handlePlayEnd" randomChannel is-suspend useSuspendSlot :right="20">
     <template #dm="{ danmu, index }">
       <div class="danmu-item">{{ danmu }}</div>
     </template>
