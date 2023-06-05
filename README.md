@@ -41,7 +41,7 @@ const danmus = ref(['danmu1', 'danmu2', 'danmu3', '...'])
 | useSuspendSlot |    是否开启弹幕悬浮时插槽（开启isSuspend时可用）     | Boolean |                  | false  |
 |      loop      |                   是否开启弹幕循环                   | Boolean |                  | false  |
 |    fontSize    |            弹幕字号（slot 模式下不可用）             | Number  |                  |   18   |
-|   extraStyle   |            额外样式（slot 模式下不可用）             | String  |                  |        |
+|   extraStyle   |            额外样式（slot 模式下不可用）             | String  |                  |   -    |
 |     speeds     |             弹幕速度（每秒移动的像素数）             | Number  |                  |  100   |
 |    debounce    |                   弹幕刷新频率(ms)                   | Number  |                  |  100   |
 | randomChannel  |                   随机选择轨道插入                   | Boolean |                  | false  |
@@ -100,13 +100,13 @@ danmakuRef.value.play()
 
 |  name   |                     说明                     |   回调参数   |
 | :-----: | :------------------------------------------: | :----------: |
-| default |                   默认slot                   |              |
+| default |                   默认slot                   |      -       |
 |   dm    |      自定义弹幕样式（需useSlot为true）       | danmu，index |
 | suspend | 自定义弹幕悬浮样式（需useSuspendSlot为true） | danmu，index |
 
 ```vue
 <template>
-  <Danmaku ref="danmaku" v-model:danmus="danmus" useSlot useSuspendSlot loop :channels="5">
+  <Danmaku ref="danmaku" :danmus="danmus" useSlot useSuspendSlot loop :channels="5">
     <template #dm="{ danmu, index }">
       <div class="dm-item">{{ index }}{{ danmu.name }}：{{ danmu.text }}</div>
     </template>

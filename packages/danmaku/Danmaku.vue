@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-02 17:52:25
+ * @LastEditTime: 2023-06-05 17:39:43
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -174,7 +174,6 @@ const suspendRight = ref<number>(10)
 const danmuList = computed<Danmu[]>({
   get: () => danmus.value,
   set: (value) => {
-    console.log('更新', value);
     emit(`update:danmus`, value)
   }
 })
@@ -332,10 +331,6 @@ function insert(dm?: Danmu) {
       dmContainer.value.removeChild(el)
     }
   })
-}
-
-function setDom(el: HTMLElement) {
-
 }
 
 /**
@@ -605,7 +600,9 @@ function useModelWrapper<T>(data: any, emit: Function, name = 'modelValue', tran
   })
 }
 
+const version = '1.0.0'
 onMounted(() => {
+  console.log(`%c danmaku-vue %c V${version} `, 'padding: 2px 1px; border-radius: 3px 0 0 3px; color: #fff; background: #606060; font-weight: bold;', 'padding: 2px 1px; border-radius: 0 3px 3px 0; color: #fff; background: #42c02e; font-weight: bold;')
   init()
 })
 
