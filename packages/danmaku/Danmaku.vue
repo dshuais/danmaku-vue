@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-05 17:39:43
+ * @LastEditTime: 2023-06-06 18:22:33
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -11,7 +11,7 @@ import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, render, toRefs 
 /**
  * props类型
  */
-export type Props = {
+type Props = {
   /**
    * 弹幕列表
    */
@@ -77,12 +77,12 @@ type CustomDanmu = {
 /**
  * 弹幕类型
  */
-export type Danmu = string | CustomDanmu
+export type Danmu<T = any> = string | T & CustomDanmu
 
 /**
  * 弹幕轨道
  */
-export interface DanChannel {
+type DanChannel = {
   [index: number]: [HTMLDivElement]
 }
 

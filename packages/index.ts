@@ -2,11 +2,12 @@
  * @Author: dushuai
  * @Date: 2023-05-31 15:11:03
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-01 10:03:54
+ * @LastEditTime: 2023-06-06 12:17:53
  * @description: packages
  */
 import type { App } from 'vue'
 import Danmaku from './danmaku'
+import type { Danmu } from './danmaku'
 
 // 所有组件列表
 const components = [
@@ -27,7 +28,8 @@ const install = (app: App): void => {
 }
 
 export {
-  Danmaku
+  Danmaku,
+  Danmu
 }
 
 const DanmakuVue = {

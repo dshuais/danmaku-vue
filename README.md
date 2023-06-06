@@ -19,15 +19,16 @@ $ pnpm add danmaku-vue --save
 ## Usage
 
 ```vue
+<script setup>
+import Danmaku from 'danmaku-vue'
+import type { Danmu } from 'danmaku-vue'
+
+const danmus = ref<Danmu[]>(['danmu1', 'danmu2', 'danmu3', '...'])
+</script>
+
 <template>
   <Danmaku :danmus="danmus" style="height:100px; width:300px;"></Danmaku>
 </template>
-
-<script setup>
-import Danmaku from 'danmaku-vue'
-
-const danmus = ref(['danmu1', 'danmu2', 'danmu3', '...'])
-</script>
 ```
 
 ## Attributes
@@ -52,6 +53,29 @@ const danmus = ref(['danmu1', 'danmu2', 'danmu3', '...'])
 - 注 1：channels 为 0，则轨道数为容器可容纳最多轨道数（整个容器）
 - 注 2：danmus 初始化后如果为空，则 `autoplay` 失效。因此对于异步加载的弹幕数据，需要手动调用 `refName.value.play()` 进行播放
 - 注 3：弹幕刷新频率为每隔多长时间插入一条弹幕
+
+## Typings
+
+|      type      |         说明         |             类型             |
+| :------------: | :------------------: | :--------------------------: |
+| Danmu<T = any> | 弹幕数据类型（泛型） | 字符串Array或自定义对象Array |
+
+通过一下方式使用（配合dm-click使用）：
+
+```js
+import type { Danmu } from 'danmaku-vue'
+type dm = {
+    avatar: string
+}
+
+function handleClickDm(dm: Danmu<dm>, index: number) {
+  if (typeof dm != 'string') {
+    console.log(dm.avatar);
+  }
+}
+
+<Danmaku @dm-click="handleClickDm" />
+```
 
 ## 内置方法
 

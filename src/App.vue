@@ -2,15 +2,19 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-05 17:14:48
- * @description: 心平气和
+ * @LastEditTime: 2023-06-06 18:38:55
+ * @description: app
 -->
 <script setup lang="ts">
 import Danmaku from '../packages'
+import type { Danmu } from '../packages'
 import { onMounted, ref } from 'vue';
 
 const danmaku = ref<InstanceType<typeof Danmaku>>()
 
+type dm = {
+  name: string
+}
 const Danmus = ref<string[]>([])
 
 // 弹幕来自b站首页
@@ -448,6 +452,13 @@ function handlePlayEnd(index: number) {
   console.log('播放结束', index);
 }
 
+function handleClickDm(dm: dm, index: number) {
+  console.log('当前点击的弹幕:>> ', index, dm, dm.name);
+  if (typeof dm != 'string') {
+    console.log(dm.name);
+  }
+}
+
 function handleDanmu(type: string) {
   switch (type) {
     case 'play':
@@ -483,8 +494,8 @@ function handleDanmu(type: string) {
   }
 }
 
-function handleAdd(danmu) {
-  console.log(danmu);
+function handleAdd(dm: string) {
+  console.log(dm);
 }
 
 function handleIndex(index: number) {
@@ -501,7 +512,7 @@ onMounted(() => {
 
 <template>
   <Danmaku ref="danmaku" use-slot loop :danmus="Danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
-    @play-end="handlePlayEnd" randomChannel is-suspend useSuspendSlot :right="20">
+    @play-end="handlePlayEnd" randomChannel is-suspend useSuspendSlot :right="20" @dm-click="handleClickDm">
     <template #dm="{ danmu, index }">
       <div class="danmu-item">{{ danmu }}</div>
     </template>
