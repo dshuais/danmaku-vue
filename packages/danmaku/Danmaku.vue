@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-06 18:22:33
+ * @LastEditTime: 2023-06-07 12:26:26
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -408,7 +408,13 @@ function createVDom(danmu: Danmu, index: number) {
       // e.stopImmediatePropagation()
       const dm: HTMLElement = e.target.closest('.dm')
       if (!dm) return
-      const suspend = dm.childNodes[1].childNodes[1] as HTMLElement
+
+      /**
+       * 2023.06.07
+       * v0.2.0(beta) https://github.com/dshuais/danmaku-vue/issues/10
+       * 优化获取dm-suspend的方法  onmouseout同理
+       */
+      const suspend = dm.getElementsByClassName('dm-suspend')[0] as HTMLElement // dm.childNodes[1].childNodes[1] as HTMLElement
       if (isSuspend.value && suspend) {
         suspend.style.display = 'flex'
       }
@@ -423,7 +429,7 @@ function createVDom(danmu: Danmu, index: number) {
       // e.stopImmediatePropagation()
       const dm: HTMLElement = e.target.closest('.dm')
       if (!dm) return
-      const suspend = dm.childNodes[1].childNodes[1] as HTMLElement
+      const suspend = dm.getElementsByClassName('dm-suspend')[0] as HTMLElement
       if (isSuspend.value && suspend) {
         suspend.style.display = 'none'
       }
@@ -484,7 +490,12 @@ function initSuspendEvents() {
       target = target.closest('.dm') || target
     }
     if (!target.className.includes('dm')) return
-    const suspend = target.childNodes[1] as HTMLElement
+    /**
+       * 2023.06.07
+       * v0.2.0(beta) https://github.com/dshuais/danmaku-vue/issues/10
+       * 优化获取dm-suspend的方法  mouseout同理
+       */
+    const suspend = target.getElementsByClassName('dm-suspend')[0] as HTMLElement // target.childNodes[1] as HTMLElement
     if (isSuspend.value && suspend) {
       suspend.style.display = 'flex'
     }
@@ -497,7 +508,7 @@ function initSuspendEvents() {
       target = target.closest('.dm') || target
     }
     if (!target.className.includes('dm')) return
-    const suspend = target.childNodes[1] as HTMLElement
+    const suspend = target.getElementsByClassName('dm-suspend')[0] as HTMLElement
     if (isSuspend.value && suspend) {
       suspend.style.display = 'none'
     }

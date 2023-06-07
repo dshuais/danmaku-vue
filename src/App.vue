@@ -2,20 +2,21 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-06 18:38:55
+ * @LastEditTime: 2023-06-07 12:18:26
  * @description: app
 -->
 <script setup lang="ts">
 import Danmaku from '../packages'
-import type { Danmu } from '../packages'
 import { onMounted, ref } from 'vue';
+import { getImageUrl } from './utils';
 
 const danmaku = ref<InstanceType<typeof Danmaku>>()
 
 type dm = {
-  name: string
+  avatar: string,
+  text: string
 }
-const Danmus = ref<string[]>([])
+const Danmus = ref<dm[]>([])
 
 // 弹幕来自b站首页
 const danmus = [
@@ -453,10 +454,7 @@ function handlePlayEnd(index: number) {
 }
 
 function handleClickDm(dm: dm, index: number) {
-  console.log('当前点击的弹幕:>> ', index, dm, dm.name);
-  if (typeof dm != 'string') {
-    console.log(dm.name);
-  }
+  console.log('当前点击的弹幕:>> ', index, dm);
 }
 
 function handleDanmu(type: string) {
@@ -503,18 +501,55 @@ function handleIndex(index: number) {
 }
 
 onMounted(() => {
-  setTimeout(() => {
-    console.log('完成');
-    Danmus.value = danmus.slice(0, 50)
-  }, 2000);
+  handleLoadImg()
+
+  Danmus.value = []
+  danmus.map((text, index) => {
+    Danmus.value.push({
+      text,
+      avatar: index % 25 != 0 ? getImageUrl(`default-avatar (${index % 25}).png`) : ''
+    })
+  })
 })
+
+function handleLoadImg() {
+  return new Promise(resolve => {
+    let imgUrlArr: string[] = [];
+    for (let i = 1; i <= 24; i++) {
+      imgUrlArr.push(getImageUrl(`default-avatar (${i}).png`))
+    }
+
+    let loadedCount = 0;
+    const imgLoaded = () => {
+      loadedCount++;
+      // 加载完成
+      if (loadedCount >= imgUrlArr.length) {
+        resolve('图片加载完成');
+      }
+    };
+
+    const Preload = () => {
+      imgUrlArr.forEach(imgUrl => {
+        const oImg = new Image();
+        oImg.addEventListener('load', imgLoaded);
+        oImg.addEventListener('error', imgLoaded);
+        oImg.src = imgUrl // 无序加载，并发下载图片
+      });
+    };
+    // 执行预加载
+    Preload();
+  });
+}
 </script>
 
 <template>
   <Danmaku ref="danmaku" use-slot loop :danmus="Danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
     @play-end="handlePlayEnd" randomChannel is-suspend useSuspendSlot :right="20" @dm-click="handleClickDm">
     <template #dm="{ danmu, index }">
-      <div class="danmu-item">{{ danmu }}</div>
+      <div class="danmu-item">
+        <img class="danmu-item--avatar" v-if="danmu.avatar" :src="danmu.avatar" alt="">
+        <div>{{ danmu.text }}</div>
+      </div>
     </template>
     <template #suspend="{ danmu, index }">
       <div class="danmu-suspend">
@@ -561,6 +596,13 @@ onMounted(() => {
   &:hover {
     color: #fff;
     background: rgba(0, 0, 0, 0.8);
+  }
+
+  &--avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 10px;
   }
 }
 

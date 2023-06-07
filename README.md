@@ -21,9 +21,8 @@ $ pnpm add danmaku-vue --save
 ```vue
 <script setup>
 import Danmaku from 'danmaku-vue'
-import type { Danmu } from 'danmaku-vue'
 
-const danmus = ref<Danmu[]>(['danmu1', 'danmu2', 'danmu3', '...'])
+const danmus = ref(['danmu1', 'danmu2', 'danmu3', '...'])
 </script>
 
 <template>
@@ -54,41 +53,17 @@ const danmus = ref<Danmu[]>(['danmu1', 'danmu2', 'danmu3', '...'])
 - 注 2：danmus 初始化后如果为空，则 `autoplay` 失效。因此对于异步加载的弹幕数据，需要手动调用 `refName.value.play()` 进行播放
 - 注 3：弹幕刷新频率为每隔多长时间插入一条弹幕
 
-## Typings
-
-|      type      |         说明         |             类型             |
-| :------------: | :------------------: | :--------------------------: |
-| Danmu<T = any> | 弹幕数据类型（泛型） | 字符串Array或自定义对象Array |
-
-通过一下方式使用（配合dm-click使用）：
-
-```js
-import type { Danmu } from 'danmaku-vue'
-type dm = {
-    avatar: string
-}
-
-function handleClickDm(dm: Danmu<dm>, index: number) {
-  if (typeof dm != 'string') {
-    console.log(dm.avatar);
-  }
-}
-
-<Danmaku @dm-click="handleClickDm" />
-```
-
 ## 内置方法
 
 通过以下方式调用：
 
 ```js
-<Danmaku ref="danmakuRef"></Danmaku>
-
 import Danmaku from 'danmaku-vue'
 const danmakuRef = ref<InstanceType<typeof Danmaku>>(null)
-
 danmakuRef.value.play()
 ...
+
+<Danmaku ref="danmakuRef"></Danmaku>
 ```
 
 |    方法名     |                     说明                     |              参数              |
@@ -129,26 +104,28 @@ danmakuRef.value.play()
 | suspend | 自定义弹幕悬浮样式（需useSuspendSlot为true） | danmu，index |
 
 ```vue
+<script setup>
+import Danmaku from 'danmaku-vue'
+
+const danmus = ref([{ avatar: 'http://a.com/a.jpg', text: 'aaa' }...])}
+</script>
+
 <template>
   <Danmaku ref="danmaku" :danmus="danmus" useSlot useSuspendSlot loop :channels="5">
     <template #dm="{ danmu, index }">
-      <div class="dm-item">{{ index }}{{ danmu.name }}：{{ danmu.text }}</div>
+      <div class="danmu-item">
+          <img class="danmu-item--avatar" v-if="danmu.avatar" :src="danmu.avatar" alt="">
+          <div>{{ danmu.text }}</div>
+      </div>
     </template>
-		<template #suspend="{ danmu, index }">
-      <div class="dm-suspend">
-        <div>+1</div>
-        <div>👍</div>
+    <template #suspend="{ danmu, index }">
+      <div class="danmu-suspend">
+        <div class="item" @click="handleAdd(danmu)">➕</div>
+        <div class="item" @click="handleIndex(index)">👍</div>
       </div>
     </template>
   </Danmaku>
 </template>
-
-<script setup>
-import Danmaku from 'danmaku-vue'
-
-const danmus = ref([{ avatar: 'http://a.com/a.jpg', name: 'a', text: 'aaa' }...])
-}
-</script>
 ```
 
 - 注 1：`dm slot`、`suspend slot`同时使用时，可通过`dm-item:hover`设置悬浮后样式
@@ -177,7 +154,8 @@ const danmus = ref([{ avatar: 'http://a.com/a.jpg', name: 'a', text: 'aaa' }...]
 - 更新
   1. 优化[鼠标悬浮区域问题](https://github.com/dshuais/danmaku-vue/issues/6)
   2. 优化[`insert`方式插入弹幕偶尔无法实时出现问题](https://github.com/dshuais/danmaku-vue/issues/7)
-  3. 更新文档和演示Demo
+  3. 优化[悬浮效果后文字消失问题](https://github.com/dshuais/danmaku-vue/issues/10)
+  4. 更新文档和演示Demo
 
 
 
