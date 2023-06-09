@@ -32,6 +32,7 @@
     "package": "rollup -c build/rollup.config.js"
   },
   "devDependencies": {
+    "@types/stats.js": "^0.17.0",
     "@vitejs/plugin-vue": "^4.2.3",
     "@vue/compiler-sfc": "^3.3.4",
     "npm-run-all": "^4.1.5",
@@ -41,6 +42,7 @@
     "rollup-plugin-vue": "^6.0.0",
     "sass": "^1.62.1",
     "sass-loader": "^13.3.1",
+    "stats.js": "^0.17.0",
     "typescript": "~5.0.4",
     "vite": "^4.3.5",
     "vite-plugin-dts": "^2.3.0",
