@@ -2,13 +2,26 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-07 12:18:26
+ * @LastEditTime: 2023-06-09 16:49:47
  * @description: app
 -->
 <script setup lang="ts">
+import Stats from 'stats.js'
 import Danmaku from '../packages'
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, reactive, ref } from 'vue';
 import { getImageUrl } from './utils';
+
+var stats = new Stats()
+stats.showPanel(0) // : fps, 1: ms, 2: mb, 3+: custom
+document.body.appendChild(stats.dom)
+stats.dom.style.display = 'none'
+
+function animate() {
+  stats.begin()
+  stats.end()
+  requestAnimationFrame(animate)
+}
+requestAnimationFrame(animate)
 
 const danmaku = ref<InstanceType<typeof Danmaku>>()
 
@@ -16,7 +29,7 @@ type dm = {
   avatar: string,
   text: string
 }
-const Danmus = ref<dm[]>([])
+const Danmus = ref<string[] | dm[]>([])
 
 // 弹幕来自b站首页
 const danmus = [
@@ -445,16 +458,33 @@ const danmus = [
   '火钳刘明',
 ]
 
-function handleListEnd() {
-  console.log('循环播放一轮结束');
-}
+// 配置
+const config = reactive({
+  useSlot: true,
+  useSuspendSlot: true,
+  isSuspend: true,
+  randomChannel: true,
+  loop: true,
+  right: 20,
+  channels: 6,
+  speeds: 100
+})
+const inputDanmu = ref<string>('')
 
-function handlePlayEnd(index: number) {
-  console.log('播放结束', index);
-}
-
-function handleClickDm(dm: dm, index: number) {
-  console.log('当前点击的弹幕:>> ', index, dm);
+function handleAddDanmu() {
+  console.log(inputDanmu.value)
+  if (!inputDanmu.value) return
+  let dm: string | dm = ''
+  if (config.useSlot) {
+    dm = {
+      text: inputDanmu.value,
+      avatar: getImageUrl(`default-avatar (${Math.ceil(Math.random() * 24)}).png`)
+    }
+  } else {
+    dm = inputDanmu.value
+  }
+  danmaku.value?.insert(dm)
+  inputDanmu.value = ''
 }
 
 function handleDanmu(type: string) {
@@ -474,15 +504,6 @@ function handleDanmu(type: string) {
     case 'clear':
       danmaku.value?.clear()
       break;
-    case 'add':
-      danmaku.value?.add('我是最新的一条弹幕')
-      break;
-    case 'insert':
-      danmaku.value?.insert('我是insert插入最新的一条弹幕')
-      break;
-    case 'push':
-      danmaku.value?.push('我是添加到末尾的弹幕')
-      break;
     case 'reset':
       danmaku.value?.reset()
       break;
@@ -490,6 +511,37 @@ function handleDanmu(type: string) {
       danmaku.value?.resize()
       break;
   }
+}
+
+function handleDanmuMode(type: string) {
+  if (type === 'slot') {
+    config.useSlot = !config.useSlot
+    config.useSlot ? Danmus.value = getDanmu() : Danmus.value = danmus
+  } else if (type === 'suspendslot') {
+    config.useSuspendSlot = !config.useSuspendSlot
+  } else {
+    config.isSuspend = !config.isSuspend
+  }
+}
+
+function handleDanmuSpeeds(speeds: number) {
+  if (config.speeds <= 10 && speeds === -10) return
+  config.speeds += speeds
+  handleDanmu('reset')
+}
+
+function handleDanmuChannels(val: number) {
+  if (config.channels <= 0 && (val === -1 || val === 0)) return
+  if (val === 0) {
+    config.channels = 0
+  } else {
+    config.channels += val
+  }
+  handleDanmu('reset')
+}
+
+function handleStats(type: string) {
+  stats.dom.style.display = type
 }
 
 function handleAdd(dm: string) {
@@ -500,17 +552,40 @@ function handleIndex(index: number) {
   console.log(index);
 }
 
-onMounted(() => {
-  handleLoadImg()
 
-  Danmus.value = []
+
+function getDanmu() {
+  const dms: dm[] = []
   danmus.map((text, index) => {
-    Danmus.value.push({
+    dms.push({
       text,
       avatar: index % 25 != 0 ? getImageUrl(`default-avatar (${index % 25}).png`) : ''
     })
   })
+  return dms
+}
+onMounted(() => {
+  window.onresize = () => handleDanmu('resize')
+  handleLoadImg()
+
+  config.useSlot ? Danmus.value = getDanmu() : Danmus.value = danmus
 })
+
+onUnmounted(() => {
+  window.onreset = null
+})
+
+function handleListEnd() {
+  console.log('循环播放一轮结束');
+}
+
+function handlePlayEnd(index: number) {
+  console.log('播放结束', index);
+}
+
+function handleClickDm(dm: dm, index: number) {
+  console.log('当前点击的弹幕:>> ', index, dm);
+}
 
 function handleLoadImg() {
   return new Promise(resolve => {
@@ -543,8 +618,8 @@ function handleLoadImg() {
 </script>
 
 <template>
-  <Danmaku ref="danmaku" use-slot loop :danmus="Danmus" style=" width: 100%;height:300px;" @list-end="handleListEnd"
-    @play-end="handlePlayEnd" randomChannel is-suspend useSuspendSlot :right="20" @dm-click="handleClickDm">
+  <Danmaku class="danmaku" ref="danmaku" :danmus="Danmus" v-bind="config" @dm-click="handleClickDm"
+    @play-end="handlePlayEnd" @list-end="handleListEnd">
     <template #dm="{ danmu, index }">
       <div class="danmu-item">
         <img class="danmu-item--avatar" v-if="danmu.avatar" :src="danmu.avatar" alt="">
@@ -559,17 +634,53 @@ function handleLoadImg() {
     </template>
   </Danmaku>
 
-  <button @click="handleDanmu('play')">播放</button>
-  <button @click="handleDanmu('stop')">暂停</button>
-  <button @click="handleDanmu('clear')">clear</button>
-  <button @click="handleDanmu('show')">show</button>
-  <button @click="handleDanmu('hide')">hide</button>
-  <button @click="handleDanmu('insert')">insert</button>
-  <button @click="handleDanmu('add')">add</button>
-  <button @click="handleDanmu('push')">push</button>
-  <button @click="handleDanmu('reset')">reset</button>
-  <button @click="handleDanmu('resize')">resize</button>
-
+  <div class="btn-list">
+    <h2 class="title">danmaku-vue</h2>
+    <p class="desc">基于 Vue.js 的一个弹幕交互插件，轻便、开箱即用、可扩展性强</p>
+    <div>
+      <div class="btn-item">
+        播放：
+        <button class="btn" @click="handleDanmu('play')">播放</button>
+        <button class="btn" @click="handleDanmu('stop')">暂停</button>
+        <button class="btn" @click="handleDanmu('clear')">清除</button>
+      </div>
+      <div class="btn-item">
+        模式：
+        <button class="btn" @click="handleDanmuMode('slot')">{{ config.useSlot ? '关闭' : '开启' }}弹幕slot</button>
+        <button class="btn" @click="handleDanmuMode('suspend')">{{ config.isSuspend ? '关闭' : '开启' }}悬浮</button>
+        <button class="btn" @click="handleDanmuMode('suspendslot')">{{ config.useSuspendSlot ? '关闭' : '开启'
+        }}悬浮slot</button>
+      </div>
+      <div class="btn-item">
+        显示：
+        <button class="btn" @click="handleDanmu('show')">显示</button>
+        <button class="btn" @click="handleDanmu('hide')">隐藏</button>
+      </div>
+      <div class="btn-item">
+        速度：
+        <button class="btn" @click="handleDanmuSpeeds(-10)">减速</button>
+        <button class="btn" @click="handleDanmuSpeeds(10)">增速</button>
+        当前速度：{{ config.speeds }}像素/s
+      </div>
+      <div class="btn-item">
+        轨道：
+        <button class="btn" @click="handleDanmuChannels(-1)">-1</button>
+        <button class="btn" @click="handleDanmuChannels(1)">+1</button>
+        <button class="btn" @click="handleDanmuChannels(0)">填满</button>
+        当前轨道数：{{ config.channels }}
+      </div>
+      <div class="btn-item">
+        发送：
+        <input class="input" type="text" placeholder="输入弹幕内容" v-model="inputDanmu">
+        <button class="btn" @click="handleAddDanmu">发送</button>
+      </div>
+      <div class="btn-item">
+        性能：
+        <button class="btn" @click="handleStats('block')">开启</button>
+        <button class="btn" @click="handleStats('none')">关闭</button>
+      </div>
+    </div>
+  </div>
 
   <a href="https://github.com/dshuais/danmaku-vue" class="github" target="_blank" aria-label="View source on Github">
     <svg width="80" height="80" viewBox="0 0 250 250"
@@ -585,7 +696,24 @@ function handleLoadImg() {
   </a>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
+#app {
+  width: 100%;
+  height: 100vh;
+  background: linear-gradient(45deg, #00DFD5, #BED5E9);
+  user-select: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.danmaku {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  z-index: 0;
+}
+
 .danmu-item {
   height: 30px;
   text-align: center;
@@ -616,6 +744,57 @@ function handleLoadImg() {
   }
 }
 
+.btn-list {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  color: #fff;
+  position: absolute;
+  z-index: 1;
+
+  .title {
+    font-size: 62px;
+    font-weight: bold;
+    text-shadow: 2px 4px 6px rgba(0, 0, 0, .4);
+  }
+
+  .desc {
+    text-shadow: 2px 4px 6px rgba(0, 0, 0, .4);
+    margin: 30px 0;
+  }
+
+  .input {
+    width: 130px;
+    padding: 7px 16px;
+    border-radius: 5px;
+    outline: none;
+    border: none;
+    margin-right: 8px;
+  }
+
+  .btn-item {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+
+    .btn {
+      background: #fff;
+      color: #000;
+      padding: 6px 16px;
+      border: none;
+      border-radius: 5px;
+      margin-right: 8px;
+      cursor: pointer;
+      outline: none;
+
+      &:hover {
+        background: #eee;
+      }
+    }
+  }
+}
+
 .github:hover .octo-arm {
   animation: wave 560ms ease-in-out;
 }
@@ -639,6 +818,16 @@ function handleLoadImg() {
 }
 
 @media (max-width: 500px) {
+  .btn-list {
+    .title {
+      font-size: 52px;
+    }
+
+    .desc {
+      font-size: 12px;
+    }
+  }
+
   .github:hover .octo-arm {
     animation: none;
   }

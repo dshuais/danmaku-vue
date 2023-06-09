@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-07 12:26:26
+ * @LastEditTime: 2023-06-09 15:04:15
  * @description: Danmaku
 -->
 <script setup lang="ts">
@@ -32,13 +32,16 @@ type Props = {
    * 是否开启插槽 默认false
    */
   useSlot?: boolean,
+  /**
+   * 是否开启悬浮插槽 默认false
+   */
   useSuspendSlot?: boolean,
   /**
   * 弹幕刷新频率(ms) 默认100
   */
   debounce?: number,
   /**
-   * 弹幕速度（像素/秒） 默认200
+   * 弹幕速度（像素/秒） 默认100
    */
   speeds?: number,
   /**
@@ -117,7 +120,7 @@ const props = withDefaults(defineProps<Props>(), {
   */
   debounce: 100,
   /**
-   * 弹幕速度（像素/秒） 默认200
+   * 弹幕速度（像素/秒） 默认100
    */
   speeds: 100,
   /**
