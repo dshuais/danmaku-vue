@@ -50,7 +50,7 @@
     "vue": "^3.3.2",
     "vue-tsc": "^1.6.5"
   },
-  "homepage": "https://dshuais.github.io/danmaku-vue/",
+  "homepage": "https://github.com/dshuais/danmaku-vue",
   "keywords": [
     "danmaku-vue",
     "danmaku",
