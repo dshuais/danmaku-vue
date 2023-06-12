@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-12 10:28:04
+ * @LastEditTime: 2023-06-12 10:40:13
  * @description: app
 -->
 <script setup lang="ts">
@@ -560,7 +560,7 @@ function handleAdd(dm: dm) {
 
 function getDanmu() {
   const dms: dm[] = []
-  danmus.slice(0, 5).map((text, index) => {
+  danmus.map((text, index) => {
     dms.push({
       text,
       avatar: index % 25 != 0 ? getImageUrl(`default-avatar (${index % 25}).png`) : ''
