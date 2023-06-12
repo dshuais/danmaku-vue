@@ -2,7 +2,7 @@
  * @Author: dushuai
  * @Date: 2023-05-25 15:46:39
  * @LastEditors: dushuai
- * @LastEditTime: 2023-06-09 16:49:47
+ * @LastEditTime: 2023-06-12 10:28:04
  * @description: app
 -->
 <script setup lang="ts">
@@ -27,7 +27,8 @@ const danmaku = ref<InstanceType<typeof Danmaku>>()
 
 type dm = {
   avatar: string,
-  text: string
+  text: string,
+  isMe?: boolean
 }
 const Danmus = ref<string[] | dm[]>([])
 
@@ -478,7 +479,8 @@ function handleAddDanmu() {
   if (config.useSlot) {
     dm = {
       text: inputDanmu.value,
-      avatar: getImageUrl(`default-avatar (${Math.ceil(Math.random() * 24)}).png`)
+      avatar: getImageUrl(`default-avatar (${Math.ceil(Math.random() * 24)}).png`),
+      isMe: true
     }
   } else {
     dm = inputDanmu.value
@@ -544,19 +546,21 @@ function handleStats(type: string) {
   stats.dom.style.display = type
 }
 
-function handleAdd(dm: string) {
+function handleDanmuLoop() {
+  config.loop = !config.loop
+  handleDanmu('reset')
+}
+
+function handleAdd(dm: dm) {
   console.log(dm);
+  const newDm: dm = { ...dm, isMe: true }
+  danmaku.value?.insert(newDm)
 }
-
-function handleIndex(index: number) {
-  console.log(index);
-}
-
 
 
 function getDanmu() {
   const dms: dm[] = []
-  danmus.map((text, index) => {
+  danmus.slice(0, 5).map((text, index) => {
     dms.push({
       text,
       avatar: index % 25 != 0 ? getImageUrl(`default-avatar (${index % 25}).png`) : ''
@@ -621,7 +625,7 @@ function handleLoadImg() {
   <Danmaku class="danmaku" ref="danmaku" :danmus="Danmus" v-bind="config" @dm-click="handleClickDm"
     @play-end="handlePlayEnd" @list-end="handleListEnd">
     <template #dm="{ danmu, index }">
-      <div class="danmu-item">
+      <div class="danmu-item" :class="[danmu.isMe ? 'btn-item--me' : '']">
         <img class="danmu-item--avatar" v-if="danmu.avatar" :src="danmu.avatar" alt="">
         <div>{{ danmu.text }}</div>
       </div>
@@ -629,7 +633,7 @@ function handleLoadImg() {
     <template #suspend="{ danmu, index }">
       <div class="danmu-suspend">
         <div class="item" @click="handleAdd(danmu)">➕</div>
-        <div class="item" @click="handleIndex(index)">👍</div>
+        <div class="item">👍</div>
       </div>
     </template>
   </Danmaku>
@@ -643,6 +647,11 @@ function handleLoadImg() {
         <button class="btn" @click="handleDanmu('play')">播放</button>
         <button class="btn" @click="handleDanmu('stop')">暂停</button>
         <button class="btn" @click="handleDanmu('clear')">清除</button>
+      </div>
+      <div class="btn-item">
+        循环：
+        <button class="btn" style="padding: 6px 50px;" @click="handleDanmuLoop">{{ config.loop ? '循环播放' : '单次播放'
+        }}</button>
       </div>
       <div class="btn-item">
         模式：
@@ -720,10 +729,12 @@ function handleLoadImg() {
   line-height: 30px;
   border-radius: 30px;
   padding: 0 10px;
+  box-sizing: border-box;
 
   &:hover {
     color: #fff;
     background: rgba(0, 0, 0, 0.8);
+    border: none;
   }
 
   &--avatar {
@@ -734,6 +745,11 @@ function handleLoadImg() {
   }
 }
 
+.btn-item--me {
+  border: 1px solid #888;
+  background: rgba(255, 255, 255, 0.2);
+}
+
 .danmu-suspend {
   display: flex;
   align-items: center;
@@ -741,6 +757,10 @@ function handleLoadImg() {
 
   .item {
     padding-left: 10px;
+
+    &:nth-last-child(1):active {
+      transform: scale(1.2);
+    }
   }
 }
 
