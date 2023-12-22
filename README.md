@@ -9,6 +9,10 @@
 
 Demo： [https://dshuais.github.io/danmaku-vue/](https://dshuais.github.io/danmaku-vue/)
 
+## Preview
+
+<img src="https://raw.githubusercontent.com/dshuais/danmaku-vue/main/src/assets/preview.gif" alt="preview" style="zoom:150%;" />
+
 ## Install
 
 ```bash
