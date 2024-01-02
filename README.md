@@ -7,6 +7,7 @@
 > 基于 Vue3+ts 的弹幕交互组件 
 > 灵感与主要逻辑借鉴于[vue-danmaku](https://github.com/hellodigua/vue-danmaku)库，在此基础上优化和扩展了部分功能，此借鉴不做任何商业用途
 
+官网：[https://danmaku-vue.dshuais.com/](https://danmaku-vue.dshuais.com/)
 Demo： [https://dshuais.github.io/danmaku-vue/](https://dshuais.github.io/danmaku-vue/)
 
 ## Preview
