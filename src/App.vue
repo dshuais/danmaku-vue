@@ -16,23 +16,37 @@ const dms = ref<Dm[]>([
   { id: 5, text: 'test5' },
 ])
 
-function handleChange(id: string) {
-  const dom = document.getElementById(id)
-  const doms = document.querySelectorAll(`#${id}`)
-  console.log(doms);
+/**
+ * 通过获取dom修改innerHTML
+ * @param event 
+ */
+function handleChange(event: MouseEvent) {
+  const id = `danmu-${(event.target as HTMLTextAreaElement).id}`
 
+  const dom = document.getElementById(id)
   if (dom) {
     dom.innerHTML = dom.innerText += '-'
   }
 }
 
+
+/**
+ * loop模式下 新增loopNumber计数 使id唯一
+ */
+
+const loopNumber = ref(0)
+
+function handleListEnd() {
+  loopNumber.value++
+}
+
 </script>
 
 <template>
-  <Danmaku class="dm-container" :danmus="dms" useSlot loop>
+  <Danmaku class="dm-container" :danmus="dms" useSlot loop @list-end="handleListEnd">
     <template #dm="{ danmu, index }">
-      <div :id="`danmu-${index}`">{{ danmu.text }}</div>
-      <button @click="handleChange(`danmu-${index}`)">change</button>
+      <div :id="`danmu-${loopNumber}-${index}`">{{ danmu.text }}</div>
+      <button :id="`${loopNumber}-${index}`" @click="handleChange($event)">change</button>
     </template>
   </Danmaku>
 </template>
