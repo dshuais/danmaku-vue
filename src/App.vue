@@ -16,20 +16,25 @@ const dms = ref<Dm[]>([
   { id: 5, text: 'test5' },
 ])
 
-function handleChange(index: number) {
-  dms.value[index].text += '+'
+function handleChange(id: string) {
+  const dom = document.getElementById(id)
+  const doms = document.querySelectorAll(`#${id}`)
+  console.log(doms);
+
+  if (dom) {
+    dom.innerHTML = dom.innerText += '-'
+  }
 }
 
 </script>
 
 <template>
-  <Danmaku class="dm-container" :danmus="dms" useSlot loop>.
+  <Danmaku class="dm-container" :danmus="dms" useSlot loop>
     <template #dm="{ danmu, index }">
-      <div>{{ danmu.text }}</div>
-      <button @click="handleChange(index)">add</button>
+      <div :id="`danmu-${index}`">{{ danmu.text }}</div>
+      <button @click="handleChange(`danmu-${index}`)">change</button>
     </template>
   </Danmaku>
-
 </template>
 
 <style scoped>
